@@ -69,6 +69,7 @@ Here are some noteworthy achievements:
 - Anvil file format (read only)
 - Proxy support ([Velocity](https://velocitypowered.com/), [Bungeecord](https://www.spigotmc.org/wiki/bungeecord/)
   and [Waterfall](https://docs.papermc.io/waterfall))
+- Command & permissions implementation
 
 Here is a [short video](https://www.youtube.com/watch?v=jkw9fZx9Etg) showing the examples and some of
 Valence's capabilities.
