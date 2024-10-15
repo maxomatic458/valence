@@ -1,0 +1,17 @@
+[package]
+name = "valence_serde"
+description = "Provides serialzation support for Valence types"
+readme = "README.md"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+documentation.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+tracing.workspace = true
+valence_server.workspace = true
+serde.workspace = true
