@@ -42,6 +42,7 @@ impl Plugin for InventoryPlugin {
                 update_player_selected_slot,
                 update_open_inventories,
                 update_player_inventories,
+                update_cursor_item,
             )
                 .before(FlushPacketsSet),
         )
@@ -71,9 +72,9 @@ pub struct Inventory {
     /// Contains a set bit for each modified slot in `slots`.
     #[doc(hidden)]
     pub changed: u64,
-    /// Makes a inventory read-only. This will prevent adding
+    /// Makes an inventory read-only for clients. This will prevent adding
     /// or removing items. If this is a player inventory
-    /// This will also make it impossible to drop items while not 
+    /// This will also make it impossible to drop items while not
     /// in the inventory (e.g. by pressing Q)
     pub readonly: bool,
 }
@@ -363,10 +364,12 @@ pub struct ClientInventoryState {
     /// Tracks what slots have been changed by this client in this tick, so we
     /// don't need to send updates for them.
     slots_changed: u64,
-    /// Whether the client has updated the cursor item in this tick. This is not
-    /// on the `CursorItem` component to make maintaining accurate change
-    /// detection for end users easier.
-    client_updated_cursor_item: bool,
+    /// If `Some`: The item the user thinks they updated their cursor item to on
+    /// the last tick.
+    /// If `None`: the user did not update their cursor item in the last tick.
+    /// This is so we can inform the user of the update through change detection
+    /// when they differ in a given tick
+    client_updated_cursor_item: Option<ItemStack>,
 }
 
 impl ClientInventoryState {
@@ -585,7 +588,7 @@ fn init_new_client_inventories(clients: Query<Entity, Added<Client>>, mut comman
                 window_id: 0,
                 state_id: Wrapping(0),
                 slots_changed: 0,
-                client_updated_cursor_item: false,
+                client_updated_cursor_item: None,
             },
             HeldItem {
                 // First slot of the hotbar.
@@ -602,7 +605,7 @@ fn update_player_inventories(
             &mut Inventory,
             &mut Client,
             &mut ClientInventoryState,
-            Ref<CursorItem>,
+            &CursorItem,
         ),
         Without<OpenInventory>,
     >,
@@ -653,21 +656,6 @@ fn update_player_inventories(
             inventory.changed = 0;
             inv_state.slots_changed = 0;
         }
-
-        if cursor_item.is_changed() && !inv_state.client_updated_cursor_item {
-            // Contrary to what you might think, we actually don't want to increment the
-            // state ID here because the client doesn't actually acknowledge the
-            // state_id change for this packet specifically. See #304.
-
-            client.write_packet(&ScreenHandlerSlotUpdateS2c {
-                window_id: -1,
-                state_id: VarInt(inv_state.state_id.0),
-                slot_idx: -1,
-                slot_data: Cow::Borrowed(&cursor_item.0),
-            });
-        }
-
-        inv_state.client_updated_cursor_item = false;
     }
 }
 
@@ -691,7 +679,7 @@ fn update_open_inventories(
     for (client_entity, mut client, mut inv_state, cursor_item, mut open_inventory) in &mut clients
     {
         // Validate that the inventory exists.
-        let Ok(mut inventory) = inventories.get_mut(open_inventory.entity) else {
+        let Ok(inventory) = inventories.get_mut(open_inventory.entity) else {
             // The inventory no longer exists, so close the inventory.
             commands.entity(client_entity).remove::<OpenInventory>();
 
@@ -755,11 +743,40 @@ fn update_open_inventories(
                 }
             }
         }
+        // Since these happen every gametick we only want to trigger change detection
+        // if we actually did update these. Otherwise systems that are
+        // running looking for changes to the `Inventory`,`ClientInventoryState`
+        // or `OpenInventory` components get unneccerely ran each gametick
+        open_inventory
+            .map_unchanged(|f| &mut f.client_changed)
+            .set_if_neq(0);
+        inv_state
+            .map_unchanged(|f| &mut f.slots_changed)
+            .set_if_neq(0);
+        inventory.map_unchanged(|f| &mut f.changed).set_if_neq(0);
+    }
+}
 
-        open_inventory.client_changed = 0;
-        inv_state.slots_changed = 0;
-        inv_state.client_updated_cursor_item = false;
-        inventory.changed = 0;
+fn update_cursor_item(
+    mut clients: Query<(&mut Client, &mut ClientInventoryState, &CursorItem), Changed<CursorItem>>,
+) {
+    for (mut client, inv_state, cursor_item) in &mut clients {
+        // The cursor item was not the item the user themselves interacted with
+        if inv_state.client_updated_cursor_item.as_ref() != Some(&cursor_item.0) {
+            // Contrary to what you might think, we actually don't want to increment the
+            // state ID here because the client doesn't actually acknowledge the
+            // state_id change for this packet specifically. See #304.
+            client.write_packet(&ScreenHandlerSlotUpdateS2c {
+                window_id: -1,
+                state_id: VarInt(inv_state.state_id.0),
+                slot_idx: -1,
+                slot_data: Cow::Borrowed(&cursor_item.0),
+            });
+        }
+
+        inv_state
+            .map_unchanged(|f| &mut f.client_updated_cursor_item)
+            .set_if_neq(None);
     }
 }
 
@@ -866,7 +883,7 @@ fn handle_click_slot(
             continue;
         }
 
-        if pkt.slot_idx < 0 && pkt.mode == ClickMode::Click {
+        if pkt.slot_idx == -999 && pkt.mode == ClickMode::Click {
             // The client is dropping the cursor item by clicking outside the window.
             
             let stack = std::mem::take(&mut cursor_item.0);
@@ -907,6 +924,10 @@ fn handle_click_slot(
                         carried_item: Cow::Borrowed(&cursor_item.0),
                     });
 
+                    continue;
+                }
+                if pkt.slot_idx == -999 {
+                    // The player was just clicking outside the inventories without holding an item
                     continue;
                 }
 
@@ -997,7 +1018,10 @@ fn handle_click_slot(
                     });
                     continue;
                 }
-
+                if pkt.slot_idx == -999 {
+                    // The player was just clicking outside the inventories without holding an item
+                    continue;
+                }
                 let stack = client_inv.slot(pkt.slot_idx as u16);
 
                 if !stack.is_empty() {
@@ -1093,7 +1117,8 @@ fn handle_click_slot(
                     }
                 }
 
-                cursor_item.set_if_neq(CursorItem(new_cursor));
+                cursor_item.set_if_neq(CursorItem(new_cursor.clone()));
+                inv_state.client_updated_cursor_item = Some(new_cursor);
 
                 if target_inventory.readonly || client_inv.readonly {
                     // resync the target inventory
@@ -1134,8 +1159,6 @@ fn handle_click_slot(
 
                 let mut new_cursor = pkt.carried_item.clone();
 
-                inv_state.client_updated_cursor_item = true;
-
                 for slot in pkt.slot_changes.iter() {
                     if (0_i16..client_inv.slot_count() as i16).contains(&slot.idx) {
                         if client_inv.readonly {
@@ -1154,7 +1177,8 @@ fn handle_click_slot(
                     }
                 }
 
-                cursor_item.set_if_neq(CursorItem(new_cursor));
+                cursor_item.set_if_neq(CursorItem(new_cursor.clone()));
+                inv_state.client_updated_cursor_item = Some(new_cursor);
 
                 if client_inv.readonly {
                     // resync the client inventory
@@ -1206,6 +1230,7 @@ fn handle_player_actions(
                                 slots: Cow::Borrowed(inv.slot_slice()),
                                 carried_item: Cow::Borrowed(&ItemStack::EMPTY),
                             });
+                            continue;
                         }
 
                         let stack = inv.replace_slot(held.slot(), ItemStack::EMPTY);
