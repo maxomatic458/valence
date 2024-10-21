@@ -79,6 +79,11 @@ pub struct HitboxShape(pub Aabb);
 #[derive(Component, Debug, Deref)]
 pub struct Hitbox(Aabb);
 
+/// A marker component that will prevent adding hitboxes automatically,
+/// allowing you to set hitboxes manually for specific entities.
+#[derive(Component, Debug)]
+pub struct NoDefaultHitbox;
+
 impl HitboxShape {
     pub const ZERO: HitboxShape = HitboxShape(Aabb::ZERO);
 
@@ -104,7 +109,7 @@ impl Hitbox {
 fn add_hitbox_component(
     settings: Res<EntityHitboxSettings>,
     mut commands: Commands,
-    query: Query<(Entity, &Position), Added<entity::Entity>>,
+    query: Query<(Entity, &Position), Added<entity::Entity>, Without<NoDefaultHitbox>>,
     alt_query: Query<(Entity, &Position, &HitboxShape), Added<HitboxShape>>,
 ) {
     if settings.add_hitbox_component {
