@@ -109,7 +109,7 @@ impl Hitbox {
 fn add_hitbox_component(
     settings: Res<EntityHitboxSettings>,
     mut commands: Commands,
-    query: Query<(Entity, &Position), (Added<entity::Entity>, Without<NoDefaultHitbox>)>,
+    query: Query<(Entity, &Position), Added<entity::Entity>, Without<NoDefaultHitbox>>,
     alt_query: Query<(Entity, &Position, &HitboxShape), Added<HitboxShape>>,
 ) {
     if settings.add_hitbox_component {
