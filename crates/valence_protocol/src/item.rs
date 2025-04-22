@@ -17,7 +17,8 @@ use crate::{sound::SoundId, Decode, Encode, IDSet, VarInt};
 pub struct ItemStack {
     pub item: ItemKind,
     pub count: i8,
-    pub components: Vec<ItemComponent>,
+    pub components_to_add: Vec<ItemComponent>,
+    pub removed_components: Vec<u32>,
 }
 
 type StrIdent = Ident<String>;
@@ -674,15 +675,17 @@ impl ItemStack {
     pub const EMPTY: ItemStack = ItemStack {
         item: ItemKind::Air,
         count: 0,
-        components: Vec::new(),
+        components_to_add: vec![],
+        removed_components: vec![],
     };
 
     #[must_use]
     pub const fn new(item: ItemKind, count: i8, components: Vec<ItemComponent>) -> Self {
         Self {
             item,
-            count,
-            components,
+            count: count,
+            components_to_add: components,
+            removed_components: vec![],
         }
     }
 
@@ -700,7 +703,7 @@ impl ItemStack {
 
     #[must_use]
     pub fn with_components(mut self, components: Vec<ItemComponent>) -> Self {
-        self.components = components;
+        self.components_to_add = components;
         self
     }
 
@@ -712,58 +715,57 @@ impl ItemStack {
 impl Encode for ItemStack {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
         if self.is_empty() {
-            VarInt(0).encode(w)
+            VarInt(0).encode(&mut w)
         } else {
             VarInt(self.count as i32).encode(&mut w)?;
             self.item.encode(&mut w)?;
 
-            // https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Slot_Data
-            // TODO: minecraft.wiki states that some items come with default components
-            // so we might have to figure out which are expected by the client for each item.
+            VarInt(self.components_to_add.len() as i32).encode(&mut w)?;
+            VarInt(self.removed_components.len() as i32).encode(&mut w)?;
 
-            // Number of components to add.
-            VarInt(self.components.len() as i32).encode(&mut w)?;
+            for component in &self.components_to_add {
+                component.encode(&mut w)?;
+            }
 
-            // Number of components to remove.
-            // VarInt(0).encode(&mut w)?;
+            for component in &self.removed_components {
+                component.encode(&mut w)?;
+            }
 
-            // Components to add.
-            self.components.encode(&mut w)
-
-            // Dont remove any components
+            Ok(())
         }
     }
 }
 
 impl<'a> Decode<'a> for ItemStack {
     fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let count = VarInt::decode(r)?;
-        if count.0 == 0 {
+        let count = VarInt::decode(r)?.0 as i8;
+        if count == 0 {
             return Ok(ItemStack::EMPTY);
         };
 
-        // TODO: see above.
         let item = ItemKind::decode(r)?;
-        let mut components = Vec::new();
+        let components_to_add_len = VarInt::decode(r)?;
+        let removed_components_len = VarInt::decode(r)?;
 
-        let num_components = VarInt::decode(r)?;
-        for _ in 0..num_components.0 {
+        let mut components_to_add = Vec::with_capacity(components_to_add_len.0 as usize);
+        let mut removed_components = Vec::with_capacity(removed_components_len.0 as usize);
+
+        for _ in 0..components_to_add_len.0 {
             let component = ItemComponent::decode(r)?;
-            components.push(component);
+            components_to_add.push(component);
         }
 
-        let stack = ItemStack {
+        for _ in 0..removed_components_len.0 {
+            let component_id = u32::decode(r)?;
+            removed_components.push(component_id);
+        }
+
+        Ok(ItemStack {
             item,
-            count: count.0 as i8,
-            components,
-        };
-
-        // Normalize empty item stacks.
-        if stack.is_empty() {
-            Ok(ItemStack::EMPTY)
-        } else {
-            Ok(stack)
-        }
+            count,
+            components_to_add,
+            removed_components,
+        })
     }
 }
 
