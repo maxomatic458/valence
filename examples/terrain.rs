@@ -9,7 +9,7 @@ use std::time::SystemTime;
 use flume::{Receiver, Sender};
 use noise::{NoiseFn, SuperSimplex};
 use tracing::info;
-use valence::prelude::*;
+use valence::{prelude::*, ServerSettings};
 use valence::spawn::IsFlat;
 
 const SPAWN_POS: DVec3 = DVec3::new(0.0, 200.0, 0.0);
@@ -43,6 +43,10 @@ pub fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
+        .insert_resource(NetworkSettings {
+            connection_mode: ConnectionMode::Offline,
+            ..Default::default()
+        })
         .add_systems(
             Update,
             (

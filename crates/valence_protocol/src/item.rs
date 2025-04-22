@@ -45,13 +45,13 @@ pub enum ItemComponent {
     },
     /// Item's custom name. Normally shown in italic, and changeable at an anvil.
     CustomName { name: Text },
+    /// Override for the item's default name. Shown when the item has no custom name.
+    ItemName { name: Text },
     /// Item's model.
     ItemModel {
         /// The model identifier.
         model: String,
     },
-    /// Override for the item's default name. Shown when the item has no custom name.
-    ItemName { name: Text },
     /// Item's lore.
     Lore {
         /// The lore lines.
@@ -89,8 +89,6 @@ pub enum ItemComponent {
     },
     /// Value for the item predicate when using custom item models.
     CustomModelData { value: VarInt },
-    /// Hides the special item's tooltip of crossbow ("Projectile:"), banner pattern layers, goat horn instrument and others.
-    HideAdditionalTooltip,
     /// Hides the item's tooltip altogether.
     HideTooltip,
     /// Accumulated anvil usage cost.
@@ -143,6 +141,20 @@ pub enum ItemComponent {
         /// Tag specifying damage types the item is immune to. Not prefixed by '#'.
         types: StrIdent,
     },
+    /// Alters the speed at which this item breaks certain blocks.
+    Tool {
+        /// The rules.
+        rules: Vec<ToolRule>,
+        mining_speed: f32,
+        damage_per_block: VarInt,
+    },
+    /// Item treated as a weapon.
+    Weapon {
+        /// Damage per Attack.
+        damage: VarInt,
+        /// How long blocking will be disabled after an attack.
+        disable_blocking_for_secs: f32,
+    },
     /// Allows the item to be enchanted by an enchanting table.
     Enchantable {
         /// Opaque internal value controlling how expensive enchantments may be offered.
@@ -185,13 +197,7 @@ pub enum ItemComponent {
         /// The effects.
         effects: Vec<u64>, // TODO
     },
-    /// Alters the speed at which this item breaks certain blocks.
-    Tool {
-        /// The rules.
-        rules: Vec<ToolRule>,
-        mining_speed: f32,
-        damage_per_block: VarInt,
-    },
+    BlocksAttacks, // marked as TODO on minecraft.wiki
     /// The enchantments stored in this enchanted book.
     StoredEnchantments {
         /// The enchantments. The first element is the enchantment ID, the second is the level.
@@ -252,6 +258,10 @@ pub enum ItemComponent {
         )>,
         /// Custom name for the potion.
         custom_name: String,
+    },
+    // description marked as TODO on minecraft.wiki
+    PotionDurationScale {
+        effects_multiplier: f32,
     },
     /// Effects granted by a suspicious stew.
     SuspiciousStewEffects {
@@ -320,6 +330,8 @@ pub enum ItemComponent {
         /// ID in the `minecraft:instrument` registry, or an inline definition.
         instrument: String,
     },
+    /// marked as TODO on minecraft.wiki
+    ProvidesTrimMaterial,
     /// Amplifier for the effect of an ominous bottle.
     OminousBottleAmplifier {
         /// Between 0 and 4.
@@ -336,6 +348,8 @@ pub enum ItemComponent {
         /// Whether the song should be shown on the item's tooltip.
         show_in_tooltip: bool,
     },
+    /// marked as TODO on minecraft.wiki
+    ProvidesBannerPattern,
     /// The recipes this knowledge book unlocks.
     Recipes {
         /// Always a Compound Tag.
@@ -437,6 +451,12 @@ pub enum ItemComponent {
         /// Always a Compound Tag.
         data: Compound,
     },
+    // Marked as TODO on minecraft.wiki
+    BreakSound {
+        /// The sound.
+        /// FIX: break_sound: Sound,
+        break_sound: Vec<u8>,
+    }
 }
 
 #[derive(Clone, PartialEq, Debug, Encode, Decode)]
@@ -580,8 +600,8 @@ impl ItemComponent {
             ItemComponent::Damage { .. } => 3,
             ItemComponent::Unbreakable { .. } => 4,
             ItemComponent::CustomName { .. } => 5,
-            ItemComponent::ItemModel { .. } => 6,
-            ItemComponent::ItemName { .. } => 7,
+            ItemComponent::ItemName { .. } => 6,
+            ItemComponent::ItemModel { .. } => 7,
             ItemComponent::Lore { .. } => 8,
             ItemComponent::Rarity { .. } => 9,
             ItemComponent::Enchantments { .. } => 10,
@@ -589,58 +609,63 @@ impl ItemComponent {
             ItemComponent::CanBreak { .. } => 12,
             ItemComponent::AttributeModifiers { .. } => 13,
             ItemComponent::CustomModelData { .. } => 14,
-            ItemComponent::HideAdditionalTooltip => 15,
-            ItemComponent::HideTooltip => 16,
-            ItemComponent::RepairCost { .. } => 17,
-            ItemComponent::CreativeSlotLock => 18,
-            ItemComponent::EnchantmentGlintOverride { .. } => 19,
-            ItemComponent::IntangibleProjectile => 20,
-            ItemComponent::Food { .. } => 21,
-            ItemComponent::Consumable { .. } => 22,
-            ItemComponent::UseRemainder { .. } => 23,
-            ItemComponent::UseCooldown { .. } => 24,
-            ItemComponent::DamageResistant { .. } => 25,
-            ItemComponent::Enchantable { .. } => 26,
-            ItemComponent::Equippable { .. } => 27,
-            ItemComponent::Repairable { .. } => 28,
-            ItemComponent::Glider => 29,
-            ItemComponent::TooltipStyle { .. } => 30,
-            ItemComponent::DeathProtection { .. } => 31,
-            ItemComponent::Tool { .. } => 32,
-            ItemComponent::StoredEnchantments { .. } => 33,
-            ItemComponent::DyedColor { .. } => 34,
-            ItemComponent::MapColor { .. } => 35,
-            ItemComponent::MapId { .. } => 36,
-            ItemComponent::MapDecorations { .. } => 37,
-            ItemComponent::MapPostProcessing { .. } => 38,
-            ItemComponent::ChargedProjectiles { .. } => 39,
-            ItemComponent::BundleContents { .. } => 40,
-            ItemComponent::PotionContents { .. } => 41,
-            ItemComponent::SuspiciousStewEffects { .. } => 42,
-            ItemComponent::WritableBookContent { .. } => 43,
-            ItemComponent::WrittenBookContent { .. } => 44,
-            ItemComponent::Trim { .. } => 45,
-            ItemComponent::DebugStickState { .. } => 46,
-            ItemComponent::EntityData { .. } => 47,
-            ItemComponent::BucketEntityData { .. } => 48,
-            ItemComponent::BlockEntityData { .. } => 49,
-            ItemComponent::Instrument { .. } => 50,
-            ItemComponent::OminousBottleAmplifier { .. } => 51,
-            ItemComponent::JukeboxPlayable { .. } => 52,
-            ItemComponent::Recipes { .. } => 53,
-            ItemComponent::LodestoneTracker { .. } => 54,
-            ItemComponent::FireworkExplosion { .. } => 55,
-            ItemComponent::Fireworks { .. } => 56,
-            ItemComponent::Profile { .. } => 57,
-            ItemComponent::NoteBlockSound { .. } => 58,
-            ItemComponent::BannerPatterns { .. } => 59,
-            ItemComponent::BaseColor { .. } => 60,
-            ItemComponent::PotDecorations { .. } => 61,
-            ItemComponent::Container { .. } => 62,
-            ItemComponent::BlockState { .. } => 63,
-            ItemComponent::Bees { .. } => 64,
-            ItemComponent::Lock { .. } => 65,
-            ItemComponent::ContainerLoot { .. } => 66,
+            ItemComponent::HideTooltip => 15,
+            ItemComponent::RepairCost { .. } => 16,
+            ItemComponent::CreativeSlotLock => 17,
+            ItemComponent::EnchantmentGlintOverride {.. } => 18,
+            ItemComponent::IntangibleProjectile => 19,
+            ItemComponent::Food { .. } => 20,
+            ItemComponent::Consumable { .. } => 21,
+            ItemComponent::UseRemainder { .. } => 22,
+            ItemComponent::UseCooldown { .. } => 23,
+            ItemComponent::DamageResistant { .. } => 24,
+            ItemComponent::Tool { .. } => 25,
+            ItemComponent::Weapon { .. } => 26,
+            ItemComponent::Enchantable { .. } => 27,
+            ItemComponent::Equippable { .. } => 28,
+            ItemComponent::Repairable { .. } => 29,
+            ItemComponent::Glider => 30,
+            ItemComponent::TooltipStyle { .. } => 31,
+            ItemComponent::DeathProtection { .. } => 32,
+            ItemComponent::BlocksAttacks => 33,
+            ItemComponent::StoredEnchantments { .. } => 34,
+            ItemComponent::DyedColor { .. } => 35,
+            ItemComponent::MapColor { .. } => 36,
+            ItemComponent::MapId { .. } => 37,
+            ItemComponent::MapDecorations { .. } => 38,
+            ItemComponent::MapPostProcessing { .. } => 39,
+            ItemComponent::ChargedProjectiles { .. } => 40,
+            ItemComponent::BundleContents { .. } => 41,
+            ItemComponent::PotionContents { .. } => 42,
+            ItemComponent::PotionDurationScale { .. } => 43,
+            ItemComponent::SuspiciousStewEffects { .. } => 44,
+            ItemComponent::WritableBookContent { .. } => 45,
+            ItemComponent::WrittenBookContent { .. } => 46,
+            ItemComponent::Trim { .. } => 47,
+            ItemComponent::DebugStickState { .. } => 48,
+            ItemComponent::EntityData { .. } => 49,
+            ItemComponent::BucketEntityData { .. } => 50,
+            ItemComponent::BlockEntityData { .. } => 51,
+            ItemComponent::Instrument { .. } => 52,
+            ItemComponent::ProvidesTrimMaterial => 53,
+            ItemComponent::OminousBottleAmplifier { .. } => 54,
+            ItemComponent::JukeboxPlayable { .. } => 55,
+            ItemComponent::ProvidesBannerPattern => 56,
+            ItemComponent::Recipes { .. } => 57,
+            ItemComponent::LodestoneTracker { .. } => 58,
+            ItemComponent::FireworkExplosion { .. } => 59,
+            ItemComponent::Fireworks { .. } => 60,
+            ItemComponent::Profile { .. } => 61,
+            ItemComponent::NoteBlockSound { .. } => 62,
+            ItemComponent::BannerPatterns { .. } => 63,
+            ItemComponent::BaseColor { .. } => 64,
+            ItemComponent::PotDecorations { .. } => 65,
+            ItemComponent::Container { .. } => 66,
+            ItemComponent::BlockState { .. } => 67,
+            ItemComponent::Bees { .. } => 68,
+            ItemComponent::Lock { .. } => 69,
+            ItemComponent::ContainerLoot { .. } => 70,
+            ItemComponent::BreakSound { .. } => 71,
         }
     }
 }
@@ -687,29 +712,49 @@ impl ItemStack {
 impl Encode for ItemStack {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
         if self.is_empty() {
-            0.encode(w)
+            VarInt(0).encode(w)
         } else {
-            self.count.encode(&mut w)?;
+            VarInt(self.count as i32).encode(&mut w)?;
             self.item.encode(&mut w)?;
+
+            // https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Slot_Data
+            // TODO: minecraft.wiki states that some items come with default components
+            // so we might have to figure out which are expected by the client for each item.
+
+            // Number of components to add.
+            VarInt(self.components.len() as i32).encode(&mut w)?;
+
+            // Number of components to remove.
+            // VarInt(0).encode(&mut w)?;
+
+            // Components to add.
             self.components.encode(&mut w)
+
+            // Dont remove any components
         }
     }
 }
 
 impl<'a> Decode<'a> for ItemStack {
     fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
-        let present = bool::decode(r)?;
-        if !present {
+        let count = VarInt::decode(r)?;
+        if count.0 == 0 {
             return Ok(ItemStack::EMPTY);
         };
 
+        // TODO: see above.
         let item = ItemKind::decode(r)?;
-        let count = i8::decode(r)?;
-        let components = Vec::<ItemComponent>::decode(r)?;
+        let mut components = Vec::new();
+
+        let num_components = VarInt::decode(r)?;
+        for _ in 0..num_components.0 {
+            let component = ItemComponent::decode(r)?;
+            components.push(component);
+        }
 
         let stack = ItemStack {
             item,
-            count,
+            count: count.0 as i8,
             components,
         };
 

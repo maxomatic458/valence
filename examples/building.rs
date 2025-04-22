@@ -3,6 +3,7 @@
 use valence::interact_block::InteractBlockEvent;
 use valence::inventory::HeldItem;
 use valence::prelude::*;
+use valence_inventory::player_inventory::PlayerInventory;
 
 const SPAWN_Y: i32 = 64;
 
@@ -57,6 +58,7 @@ fn init_clients(
             &mut VisibleEntityLayers,
             &mut Position,
             &mut GameMode,
+            &mut Inventory,
         ),
         Added<Client>,
     >,
@@ -69,6 +71,7 @@ fn init_clients(
         mut visible_entity_layers,
         mut pos,
         mut game_mode,
+        mut inventory,
     ) in &mut clients
     {
         let layer = layers.single();
@@ -78,6 +81,8 @@ fn init_clients(
         visible_entity_layers.0.insert(layer);
         pos.set([0.0, f64::from(SPAWN_Y) + 1.0, 0.0]);
         *game_mode = GameMode::Creative;
+
+        inventory.set_slot(PlayerInventory::hotbar_to_slot(0), ItemStack::new(ItemKind::Stone, 20, vec![]));
 
         client.send_chat_message("Welcome to Valence! Build something cool.".italic());
     }
