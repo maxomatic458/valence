@@ -405,7 +405,7 @@ mod tests {
                 f: BlockPos::new(1, 2, 3),
                 g: Hand::Off,
                 h: Ident::new("minecraft:whatever").unwrap(),
-                i: ItemStack::new(ItemKind::WoodenSword, 12, Vec::new()),
+                i: ItemStack::new(ItemKind::WoodenSword, 12, None),
                 j: "my ".into_text() + "fancy".italic() + " text",
                 k: VarInt(123),
                 l: VarLong(456),

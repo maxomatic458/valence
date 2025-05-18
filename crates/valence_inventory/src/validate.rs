@@ -362,6 +362,7 @@ fn calculate_net_item_delta(
 
 #[cfg(test)]
 mod tests {
+    use valence_server::item::ItemComponent;
     use valence_server::nbt::Compound;
     use valence_server::nbt::Value::Int;
     use valence_server::protocol::packets::play::container_click_c2s::SlotChange;
@@ -482,9 +483,7 @@ mod tests {
         // Insert an item with no NBT data that should have NBT Data.
         inventory.set_slot(0, ItemStack::new(ItemKind::DiamondPickaxe, 1, None));
 
-        // Proper NBT Compound
-        let mut compound = Compound::new();
-        compound.insert("Damage", Int(1));
+        let damage_component = ItemComponent::Damage { damage: VarInt(1) };
 
         let packet = ContainerClickC2s {
             window_id: VarInt(1),
@@ -497,11 +496,7 @@ mod tests {
                 stack: ItemStack::EMPTY,
             }]
             .into(),
-            carried_item: ItemStack {
-                item: ItemKind::DiamondPickaxe,
-                count: 1,
-                nbt: Some(compound),
-            },
+            carried_item: ItemStack::new(ItemKind::DiamondPickaxe, 1, Some(vec![damage_component])),
         };
 
         validate_click_slot_packet(&packet, &player_inventory, Some(&inventory), &cursor_item)

@@ -1,7 +1,8 @@
-use anyhow::Ok;
+use std::{collections::HashMap, fmt};
+
 use heck::ToPascalCase;
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 use serde::Deserialize;
 use valence_build_utils::{ident, rerun_if_changed};
 
@@ -15,6 +16,8 @@ struct Item {
     enchantability: u8,
     fireproof: bool,
     food: Option<FoodComponent>,
+    #[serde(deserialize_with = "deserialize_components_vec")]
+    components: Vec<SerItemComponent>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -25,6 +28,108 @@ struct FoodComponent {
     meat: bool,
     snack: bool,
     // TODO: effects
+}
+
+
+#[derive(Deserialize, Clone, Debug)]
+enum SerItemComponent {
+    #[serde(rename = "minecraft:enchantments")]
+    Enchantments {
+        levels: HashMap<i32, i32>,
+    },
+    #[serde(rename = "minecraft:lore")]
+    Lore(Vec<String>),
+    #[serde(rename = "minecraft:attribute_modifiers")]
+    AttributeModifiers {
+        modifiers: Vec<SerAttributeModifier>,
+    },
+    #[serde(rename = "minecraft:max_stack_size")]
+    MaxStackSize(i8),
+    #[serde(rename = "minecraft:repair_cost")]
+    RepairCost(i32),
+    #[serde(rename = "minecraft:item_model")]
+    ItemModel(String),
+    #[serde(rename = "minecraft:rarity")]
+    Rarity(String),
+    #[serde(rename = "minecraft:item_name")]
+    ItemName(String),
+    #[serde(rename = "minecraft:damage")]
+    Damage(i32),
+    #[serde(rename = "minecraft:max_damage")]
+    MaxDamage(i32),
+    #[serde(rename = "minecraft:repairable")]
+    Repairable {
+        items: String,
+    },
+}
+
+fn deserialize_components_vec<'de, D>(
+    deserializer: D,
+) -> Result<Vec<SerItemComponent>, D::Error>
+where
+    D: ::serde::Deserializer<'de>,
+{
+    use ::serde::de::{self, MapAccess, Visitor};
+    use std::fmt;
+
+    struct ComponentsVisitor;
+
+    impl<'de> Visitor<'de> for ComponentsVisitor {
+        type Value = Vec<SerItemComponent>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a map of SerItemComponent")
+        }
+
+        fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+        where
+            M: MapAccess<'de>,
+        {
+            let mut components = Vec::new();
+            while let Some((key, value)) = map.next_entry::<String, ::serde_json::Value>()? {
+                // Try to deserialize each entry as a SerItemComponent using the rename attributes
+                let json_obj = ::serde_json::json!({ key: value });
+                match ::serde_json::from_value::<SerItemComponent>(json_obj) {
+                    Ok(component) => components.push(component),
+                    Err(_) => continue, // skip unknown keys or invalid formats
+                }
+            }
+            Ok(components)
+        }
+    }
+
+    deserializer.deserialize_map(ComponentsVisitor)
+}
+
+
+#[derive(Deserialize, Clone, Debug)]  
+struct SerAttributeModifier {
+    #[serde(rename = "type")]
+    pub type_: String,
+    pub id: String,
+    pub amount: f64,
+    pub operation: String,
+    pub slot: String,
+}
+
+impl ToTokens for SerAttributeModifier {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let type_ = &self.type_;
+        let id = &self.id;
+        let amount = &self.amount;
+        let operation = &self.operation;
+        let slot = &self.slot;
+
+        tokens.extend(quote! {
+            SerAttributeModifier {
+                type_: #type_,
+                id: #id,
+                amount: #amount,
+                operation: #operation,
+                slot: #slot,
+            }
+        });
+    }
 }
 
 pub(crate) fn build() -> anyhow::Result<TokenStream> {
@@ -172,9 +277,90 @@ pub(crate) fn build() -> anyhow::Result<TokenStream> {
         })
         .collect::<TokenStream>();
 
+let item_kind_to_components_arms = items
+    .iter()
+    .map(|item| {
+        let name = ident(item.name.to_pascal_case());
+        let components = &item.components;
+
+        // Collect each component's tokens into a Vec
+        let components_arms = components
+            .iter()
+            .map(|component| match component {
+                SerItemComponent::Enchantments { levels } => {
+                    let levels_vec = levels.iter().map(|(k, v)| {
+                        let k = *k;
+                        let v = *v;
+                        quote! { (#k, #v) }
+                    });
+                    quote! {
+                        SerItemComponent::Enchantments { levels: ::std::collections::HashMap::from_iter([#(#levels_vec),*]) }
+                    }
+                }
+                SerItemComponent::Lore(lore) => {
+                    quote! {
+                        SerItemComponent::Lore(vec![#(#lore),*])
+                    }
+                }
+                SerItemComponent::AttributeModifiers { modifiers } => {
+                    let modifiers_tokens = modifiers.iter().map(|m| quote! { #m }).collect::<Vec<_>>();
+                    quote! {
+                        SerItemComponent::AttributeModifiers { modifiers: vec![#(#modifiers_tokens),*] }
+                    }
+                }
+                SerItemComponent::MaxStackSize(max_stack) => {
+                    quote! {
+                        SerItemComponent::MaxStackSize(#max_stack)
+                    }
+                }
+                SerItemComponent::RepairCost(repair_cost) => {
+                    quote! {
+                        SerItemComponent::RepairCost(#repair_cost)
+                    }
+                }
+                SerItemComponent::ItemModel(item_model) => {
+                    quote! {
+                        SerItemComponent::ItemModel(#item_model)
+                    }
+                }
+                SerItemComponent::Rarity(rarity) => {
+                    quote! {
+                        SerItemComponent::Rarity(#rarity)
+                    }
+                }
+                SerItemComponent::ItemName(item_name) => {
+                    quote! {
+                        SerItemComponent::ItemName(#item_name)
+                    }
+                }
+                SerItemComponent::Damage(damage) => {
+                    quote! {
+                        SerItemComponent::Damage(#damage)
+                    }
+                }
+                SerItemComponent::MaxDamage(max_damage) => {
+                    quote! {
+                        SerItemComponent::MaxDamage(#max_damage)
+                    }
+                }
+                SerItemComponent::Repairable { items } => {
+                    quote! {
+                        SerItemComponent::Repairable { items: #items }
+                    }
+                }
+            })
+            .collect::<Vec<_>>();
+
+        quote! {
+            Self::#name => vec![#(#components_arms),*],
+        }
+    })
+    .collect::<TokenStream>();
+        
+
     Ok(quote! {
         use crate::registry_id::RegistryId;
-
+        use std::collections::HashMap;
         /// Represents an item from the game
         #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
         #[repr(u16)]
@@ -193,6 +379,37 @@ pub(crate) fn build() -> anyhow::Result<TokenStream> {
             pub always_edible: bool,
             pub meat: bool,
             pub snack: bool,
+        }
+
+        /// Contains the serializable components of an item.
+        #[derive(Clone, PartialEq, Debug)]
+        pub enum SerItemComponent {
+            Enchantments {
+                levels: HashMap<i32, i32>,
+            },
+            Lore(Vec<&'static str>),
+            AttributeModifiers {
+                modifiers: Vec<SerAttributeModifier>,
+            },
+            MaxStackSize(i8),
+            RepairCost(i32),
+            ItemModel(&'static str),
+            Rarity(&'static str),
+            ItemName(&'static str),
+            Damage(i32),
+            MaxDamage(i32),
+            Repairable {
+                items: &'static str,
+            },
+        }
+            
+        #[derive(Clone, PartialEq, Debug)]  
+        pub struct SerAttributeModifier {
+            pub type_: &'static str,
+            pub id: &'static str,
+            pub amount: f64,
+            pub operation: &'static str,
+            pub slot: &'static str,
         }
 
         impl ItemKind {
@@ -283,6 +500,16 @@ pub(crate) fn build() -> anyhow::Result<TokenStream> {
                     _ => false
                 }
             }
+
+            /// Gets the Serializable default components of this item kind.
+            // TODO: make this constant maybe?
+            pub fn components(self) -> Vec<SerItemComponent> {
+                match self {
+                    #item_kind_to_components_arms
+                    _ => unreachable!()
+                }
+            }
+
 
             /*
             /// Constructs an item kind from a block kind.

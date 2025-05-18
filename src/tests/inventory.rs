@@ -151,7 +151,7 @@ fn test_should_modify_player_inventory_click_slot() {
         .state_id();
 
     helper.send(&ContainerClickC2s {
-        window_id: 0,
+        window_id: VarInt(0),
         button: 0,
         mode: ClickMode::Click,
         state_id: VarInt(state_id.0),
@@ -951,7 +951,7 @@ fn test_window_id_increments() {
         .world_mut()
         .get::<ClientInventoryState>(client)
         .expect("could not find client");
-    assert_eq!(inv_state.window_id(), 3);
+    assert_eq!(inv_state.window_id(), VarInt(3));
 }
 
 #[test]
@@ -1334,7 +1334,7 @@ mod dropping_items {
         let state_id = inv_state.state_id().0;
 
         helper.send(&ContainerClickC2s {
-            window_id: 0,
+            window_id: VarInt(0),
             state_id: VarInt(state_id),
             slot_idx: -999,
             button: 0,
@@ -1397,7 +1397,7 @@ mod dropping_items {
         inventory.set_slot(40, ItemStack::new(ItemKind::IronIngot, 32, None));
 
         helper.send(&ContainerClickC2s {
-            window_id: 0,
+            window_id: VarInt(0),
             slot_idx: 40,
             button: 0,
             mode: ClickMode::DropKey,
@@ -1458,7 +1458,7 @@ mod dropping_items {
         inventory.set_slot(40, ItemStack::new(ItemKind::IronIngot, 32, None));
 
         helper.send(&ContainerClickC2s {
-            window_id: 0,
+            window_id: VarInt(0),
             slot_idx: 40,
             button: 0,
             mode: ClickMode::DropKey,
@@ -1524,7 +1524,7 @@ mod dropping_items {
         inventory.set_slot(40, ItemStack::new(ItemKind::IronIngot, 32, None));
 
         helper.send(&ContainerClickC2s {
-            window_id: 0,
+            window_id: VarInt(0),
             slot_idx: 40,
             button: 1, // pressing control
             mode: ClickMode::DropKey,
@@ -1585,7 +1585,7 @@ mod dropping_items {
         inventory.set_slot(40, ItemStack::new(ItemKind::IronIngot, 32, None));
 
         helper.send(&ContainerClickC2s {
-            window_id: 0,
+            window_id: VarInt(0),
             slot_idx: 40,
             button: 1, // pressing control
             mode: ClickMode::DropKey,
