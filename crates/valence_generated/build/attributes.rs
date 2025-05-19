@@ -26,6 +26,7 @@ pub(crate) fn build() -> anyhow::Result<TokenStream> {
     let mut entity_attribute_get_id = TokenStream::new();
     let mut entity_attribute_from_id = TokenStream::new();
     let mut entity_attribute_name = TokenStream::new();
+    let mut name_to_attribute = TokenStream::new();
     let mut entity_attribute_default_value = TokenStream::new();
     let mut entity_attribute_translation_key = TokenStream::new();
     let mut entity_attribute_tracked = TokenStream::new();
@@ -75,6 +76,10 @@ pub(crate) fn build() -> anyhow::Result<TokenStream> {
 
         entity_attribute_max_value.extend([quote! {
             EntityAttribute::#key => #max_value,
+        }]);
+
+        name_to_attribute.extend([quote! {
+            #name => Some(EntityAttribute::#key),
         }]);
     }
 
@@ -135,6 +140,13 @@ pub(crate) fn build() -> anyhow::Result<TokenStream> {
             pub fn name(self) -> &'static str {
                 match self {
                     #entity_attribute_name
+                }
+            }
+
+            pub fn from_str(name: &str) -> Option<Self> {
+                match name {
+                    #name_to_attribute
+                    _ => None,
                 }
             }
 

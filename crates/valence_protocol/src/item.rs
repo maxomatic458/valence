@@ -700,7 +700,34 @@ impl ItemComponent {
             SerItemComponent::Lore(lore) => ItemComponent::Lore {
                 lines: lore.into_iter().map(|line| Text::from(line)).collect(),
             },
-            SerItemComponent::AttributeModifiers { modifiers } => todo!(),
+            SerItemComponent::AttributeModifiers { modifiers } => ItemComponent::AttributeModifiers { 
+                attributes: modifiers
+                    .into_iter()
+                    .map(|modifier| {
+                        let type_ = EntityAttribute::from_str(modifier.type_).unwrap();
+                        let operation = EntityAttributeOperation::Add; // All vanilla items just use add by default
+                        // TODO: refactor this
+                        let slot = match modifier.slot {
+                            "mainhand" => AttributeSlot::MainHand,
+                            "offhand" => AttributeSlot::OffHand,
+                            "feet" => AttributeSlot::Feet,
+                            "legs" => AttributeSlot::Legs,
+                            "chest" => AttributeSlot::Chest,
+                            "body" => AttributeSlot::Body,
+                            _ => unreachable!(),
+                        };
+                        ItemAttribute {
+                            effect: type_,
+                            uuid: uuid::Uuid::new_v4(),
+                            name: modifier.id.to_string(),
+                            value: modifier.amount,
+                            operation,
+                            slot: slot,
+                        }
+                    })
+                    .collect(),
+                show_in_tooltip: true,
+            },
             SerItemComponent::MaxStackSize(max_stack_size) => ItemComponent::MaxStackSize { max_stack_size: VarInt(max_stack_size.into()) },
             SerItemComponent::RepairCost(cost) => ItemComponent::RepairCost { cost: VarInt(cost) },
             SerItemComponent::ItemModel(model) => ItemComponent::ItemModel { model: model.to_string() },
