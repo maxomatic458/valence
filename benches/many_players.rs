@@ -9,6 +9,7 @@ use valence::layer::chunk::UnloadedChunk;
 use valence::layer::LayerBundle;
 use valence::math::DVec3;
 use valence::network::NetworkPlugin;
+use valence::protocol::movement_flags::MovementFlags;
 use valence::protocol::packets::play::{MovePlayerPosRotC2s, SwingC2s};
 use valence::registry::{BiomeRegistry, DimensionTypeRegistry};
 use valence::testing::create_mock_client;
@@ -106,7 +107,7 @@ fn run_many_players(bencher: Bencher, client_count: usize, view_dist: u8, world_
                 position: pos + offset,
                 yaw: rng.gen_range(0.0..=360.0),
                 pitch: rng.gen_range(0.0..=360.0),
-                on_ground: rng.gen(),
+                flags: MovementFlags::new(),
             });
 
             helper.send(&SwingC2s { hand: Hand::Main });

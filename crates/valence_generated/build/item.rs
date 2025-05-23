@@ -503,7 +503,7 @@ let item_kind_to_components_arms = items
 
             /// Gets the Serializable default components of this item kind.
             // TODO: make this constant maybe?
-            pub fn components(self) -> Vec<SerItemComponent> {
+            pub fn ser_components(self) -> Vec<SerItemComponent> {
                 match self {
                     #item_kind_to_components_arms
                     _ => unreachable!()
