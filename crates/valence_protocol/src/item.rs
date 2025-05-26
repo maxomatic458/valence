@@ -782,6 +782,14 @@ impl ItemStack {
             .collect()
     }
 
+    /// Returns the default components for the [`ItemKind`].
+    pub fn default_components(&self) -> Vec<ItemComponent> {
+        self.item.default_components()
+            .iter()
+            .filter_map(|component| component.as_ref().map(|boxed| *boxed.clone()))
+            .collect()
+    }
+
     /// Attach a component to the item stack.
     pub fn insert_component(&mut self, component: ItemComponent) {
         let id = component.id() as usize;
@@ -791,13 +799,28 @@ impl ItemStack {
     /// Remove a component from the item stack by its ID, see [`ItemComponent::id`].
     /// 
     /// Returns the removed component if it was present, otherwise `None`.
-    pub fn remove_component(&mut self, id: u32) -> Option<ItemComponent> {
-        let id = id as usize;
+    pub fn remove_component(&mut self, id: impl Into<usize>) -> Option<ItemComponent> {
+        let id = id.into();
         if id < NUM_ITEM_COMPONENTS {
             self.components[id].take().map(|boxed| *boxed)
         } else {
             None
         }
+    }
+
+    /// Get a specific component by its ID, see [`ItemComponent::id`].
+    pub fn get_component(&self, id: impl Into<usize>) -> Option<&ItemComponent> {
+        let id = id.into();
+        if id < NUM_ITEM_COMPONENTS {
+            self.components[id].as_ref().map(|boxed| &**boxed)
+        } else {
+            None
+        }
+    }
+
+    /// Get a mutable iterator over the components of the item stack.
+    pub fn components_iter_mut(&mut self) -> impl Iterator<Item = &mut ItemComponent> {
+        self.components.iter_mut().filter_map(|component| component.as_mut().map(|boxed| &mut **boxed))
     }
 
     #[must_use]
@@ -822,14 +845,6 @@ impl ItemStack {
 
     pub const fn is_empty(&self) -> bool {
         matches!(self.item, ItemKind::Air) || self.count <= 0
-    }
-
-    /// Returns the default components for the [`ItemKind`].
-    pub fn default_components(&self) -> Vec<ItemComponent> {
-        self.item.default_components()
-            .iter()
-            .filter_map(|component| component.as_ref().map(|boxed| *boxed.clone()))
-            .collect()
     }
 }
 
@@ -902,13 +917,13 @@ impl<'a> Decode<'a> for ItemStack {
 
         let mut components = default_components;
 
+        for id in components_removed {
+            components[id as usize] = None;
+        }
+
         for component in components_added {
             let id = component.id() as usize;
             components[id] = Some(Box::new(component));
-        }
-
-        for id in components_removed {
-            components[id as usize] = None;
         }
 
         Ok(ItemStack {
