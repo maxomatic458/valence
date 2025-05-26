@@ -383,25 +383,25 @@ mod tests {
             slot_changes: vec![
                 SlotChange {
                     idx: 4,
-                    stack: ItemStack::new(ItemKind::Diamond, 21, None),
+                    stack: ItemStack::new(ItemKind::Diamond, 21),
                 },
                 SlotChange {
                     idx: 3,
-                    stack: ItemStack::new(ItemKind::Diamond, 21, None),
+                    stack: ItemStack::new(ItemKind::Diamond, 21),
                 },
                 SlotChange {
                     idx: 5,
-                    stack: ItemStack::new(ItemKind::Diamond, 21, None),
+                    stack: ItemStack::new(ItemKind::Diamond, 21),
                 },
             ]
             .into(),
-            carried_item: ItemStack::new(ItemKind::Diamond, 1, None),
+            carried_item: ItemStack::new(ItemKind::Diamond, 1),
         };
 
         let player_inventory = Inventory::new(InventoryKind::Player);
         let inventory = Inventory::new(InventoryKind::Generic9x1);
         let window = InventoryWindow::new(&player_inventory, Some(&inventory));
-        let cursor_item = CursorItem(ItemStack::new(ItemKind::Diamond, 64, None));
+        let cursor_item = CursorItem(ItemStack::new(ItemKind::Diamond, 64));
 
         assert_eq!(
             calculate_net_item_delta(&drag_packet, &window, &cursor_item),
@@ -420,23 +420,23 @@ mod tests {
             slot_changes: vec![
                 SlotChange {
                     idx: 2,
-                    stack: ItemStack::new(ItemKind::Diamond, 2, None),
+                    stack: ItemStack::new(ItemKind::Diamond, 2),
                 },
                 SlotChange {
                     idx: 3,
-                    stack: ItemStack::new(ItemKind::IronIngot, 2, None),
+                    stack: ItemStack::new(ItemKind::IronIngot, 2),
                 },
                 SlotChange {
                     idx: 4,
-                    stack: ItemStack::new(ItemKind::GoldIngot, 2, None),
+                    stack: ItemStack::new(ItemKind::GoldIngot, 2),
                 },
                 SlotChange {
                     idx: 5,
-                    stack: ItemStack::new(ItemKind::Emerald, 2, None),
+                    stack: ItemStack::new(ItemKind::Emerald, 2),
                 },
             ]
             .into(),
-            carried_item: ItemStack::new(ItemKind::OakWood, 2, None),
+            carried_item: ItemStack::new(ItemKind::OakWood, 2),
         };
 
         let player_inventory = Inventory::new(InventoryKind::Player);
@@ -454,7 +454,7 @@ mod tests {
     fn click_filled_slot_with_empty_cursor_success() {
         let player_inventory = Inventory::new(InventoryKind::Player);
         let mut inventory = Inventory::new(InventoryKind::Generic9x1);
-        inventory.set_slot(0, ItemStack::new(ItemKind::Diamond, 20, None));
+        inventory.set_slot(0, ItemStack::new(ItemKind::Diamond, 20));
         let cursor_item = CursorItem::default();
         let packet = ContainerClickC2s {
             window_id: VarInt(1),
@@ -481,7 +481,7 @@ mod tests {
 
         let mut inventory = Inventory::new(InventoryKind::Generic9x1);
         // Insert an item with no NBT data that should have NBT Data.
-        inventory.set_slot(0, ItemStack::new(ItemKind::DiamondPickaxe, 1, None));
+        inventory.set_slot(0, ItemStack::new(ItemKind::DiamondPickaxe, 1));
 
         let damage_component = ItemComponent::Damage { damage: VarInt(1) };
 
@@ -496,7 +496,7 @@ mod tests {
                 stack: ItemStack::EMPTY,
             }]
             .into(),
-            carried_item: ItemStack::new(ItemKind::DiamondPickaxe, 1, Some(vec![damage_component])),
+            carried_item: ItemStack::new(ItemKind::DiamondPickaxe, 1).with_components(vec![damage_component]),
         };
 
         validate_click_slot_packet(&packet, &player_inventory, Some(&inventory), &cursor_item)
@@ -508,8 +508,8 @@ mod tests {
         let player_inventory = Inventory::new(InventoryKind::Player);
         let inventory1 = Inventory::new(InventoryKind::Generic9x1);
         let mut inventory2 = Inventory::new(InventoryKind::Generic9x1);
-        inventory2.set_slot(0, ItemStack::new(ItemKind::Diamond, 10, None));
-        let cursor_item = CursorItem(ItemStack::new(ItemKind::Diamond, 20, None));
+        inventory2.set_slot(0, ItemStack::new(ItemKind::Diamond, 10));
+        let cursor_item = CursorItem(ItemStack::new(ItemKind::Diamond, 20));
         let packet1 = ContainerClickC2s {
             window_id: VarInt(1),
             button: 0,
@@ -518,7 +518,7 @@ mod tests {
             slot_idx: 0,
             slot_changes: vec![SlotChange {
                 idx: 0,
-                stack: ItemStack::new(ItemKind::Diamond, 20, None),
+                stack: ItemStack::new(ItemKind::Diamond, 20),
             }]
             .into(),
             carried_item: ItemStack::EMPTY,
@@ -531,7 +531,7 @@ mod tests {
             slot_idx: 0,
             slot_changes: vec![SlotChange {
                 idx: 0,
-                stack: ItemStack::new(ItemKind::Diamond, 30, None),
+                stack: ItemStack::new(ItemKind::Diamond, 30),
             }]
             .into(),
             carried_item: ItemStack::EMPTY,
@@ -548,8 +548,8 @@ mod tests {
     fn click_filled_slot_with_filled_cursor_stack_overflow_success() {
         let player_inventory = Inventory::new(InventoryKind::Player);
         let mut inventory = Inventory::new(InventoryKind::Generic9x1);
-        inventory.set_slot(0, ItemStack::new(ItemKind::Diamond, 20, None));
-        let cursor_item = CursorItem(ItemStack::new(ItemKind::Diamond, 64, None));
+        inventory.set_slot(0, ItemStack::new(ItemKind::Diamond, 20));
+        let cursor_item = CursorItem(ItemStack::new(ItemKind::Diamond, 64));
         let packet = ContainerClickC2s {
             window_id: VarInt(1),
             button: 0,
@@ -558,10 +558,10 @@ mod tests {
             slot_idx: 0,
             slot_changes: vec![SlotChange {
                 idx: 0,
-                stack: ItemStack::new(ItemKind::Diamond, 64, None),
+                stack: ItemStack::new(ItemKind::Diamond, 64),
             }]
             .into(),
-            carried_item: ItemStack::new(ItemKind::Diamond, 20, None),
+            carried_item: ItemStack::new(ItemKind::Diamond, 20),
         };
 
         validate_click_slot_packet(&packet, &player_inventory, Some(&inventory), &cursor_item)
@@ -572,8 +572,8 @@ mod tests {
     fn click_filled_slot_with_filled_cursor_different_item_success() {
         let player_inventory = Inventory::new(InventoryKind::Player);
         let mut inventory = Inventory::new(InventoryKind::Generic9x1);
-        inventory.set_slot(0, ItemStack::new(ItemKind::IronIngot, 2, None));
-        let cursor_item = CursorItem(ItemStack::new(ItemKind::Diamond, 2, None));
+        inventory.set_slot(0, ItemStack::new(ItemKind::IronIngot, 2));
+        let cursor_item = CursorItem(ItemStack::new(ItemKind::Diamond, 2));
         let packet = ContainerClickC2s {
             window_id: VarInt(1),
             button: 0,
@@ -582,10 +582,10 @@ mod tests {
             slot_idx: 0,
             slot_changes: vec![SlotChange {
                 idx: 0,
-                stack: ItemStack::new(ItemKind::Diamond, 2, None),
+                stack: ItemStack::new(ItemKind::Diamond, 2),
             }]
             .into(),
-            carried_item: ItemStack::new(ItemKind::IronIngot, 2, None),
+            carried_item: ItemStack::new(ItemKind::IronIngot, 2),
         };
 
         validate_click_slot_packet(&packet, &player_inventory, Some(&inventory), &cursor_item)
@@ -597,8 +597,8 @@ mod tests {
         let player_inventory = Inventory::new(InventoryKind::Player);
         let inventory1 = Inventory::new(InventoryKind::Generic9x1);
         let mut inventory2 = Inventory::new(InventoryKind::Generic9x1);
-        inventory2.set_slot(0, ItemStack::new(ItemKind::Diamond, 10, None));
-        let cursor_item = CursorItem(ItemStack::new(ItemKind::Diamond, 20, None));
+        inventory2.set_slot(0, ItemStack::new(ItemKind::Diamond, 10));
+        let cursor_item = CursorItem(ItemStack::new(ItemKind::Diamond, 20));
         let packet1 = ContainerClickC2s {
             window_id: VarInt(1),
             button: 0,
@@ -607,7 +607,7 @@ mod tests {
             slot_idx: 0,
             slot_changes: vec![SlotChange {
                 idx: 0,
-                stack: ItemStack::new(ItemKind::Diamond, 22, None),
+                stack: ItemStack::new(ItemKind::Diamond, 22),
             }]
             .into(),
             carried_item: ItemStack::EMPTY,
@@ -620,7 +620,7 @@ mod tests {
             slot_idx: 0,
             slot_changes: vec![SlotChange {
                 idx: 0,
-                stack: ItemStack::new(ItemKind::Diamond, 32, None),
+                stack: ItemStack::new(ItemKind::Diamond, 32),
             }]
             .into(),
             carried_item: ItemStack::EMPTY,
@@ -634,11 +634,11 @@ mod tests {
             slot_changes: vec![
                 SlotChange {
                     idx: 0,
-                    stack: ItemStack::new(ItemKind::Diamond, 22, None),
+                    stack: ItemStack::new(ItemKind::Diamond, 22),
                 },
                 SlotChange {
                     idx: 1,
-                    stack: ItemStack::new(ItemKind::Diamond, 22, None),
+                    stack: ItemStack::new(ItemKind::Diamond, 22),
                 },
             ]
             .into(),
@@ -660,7 +660,7 @@ mod tests {
         // no alchemy allowed - make sure that lead can't be turned into gold
 
         let mut player_inventory = Inventory::new(InventoryKind::Player);
-        player_inventory.set_slot(9, ItemStack::new(ItemKind::Lead, 2, None));
+        player_inventory.set_slot(9, ItemStack::new(ItemKind::Lead, 2));
         let cursor_item = CursorItem::default();
 
         let packets = vec![
@@ -677,7 +677,7 @@ mod tests {
                     },
                     SlotChange {
                         idx: 36,
-                        stack: ItemStack::new(ItemKind::GoldIngot, 2, None),
+                        stack: ItemStack::new(ItemKind::GoldIngot, 2),
                     },
                 ]
                 .into(),
@@ -696,7 +696,7 @@ mod tests {
                     },
                     SlotChange {
                         idx: 36,
-                        stack: ItemStack::new(ItemKind::GoldIngot, 2, None),
+                        stack: ItemStack::new(ItemKind::GoldIngot, 2),
                     },
                 ]
                 .into(),
@@ -713,7 +713,7 @@ mod tests {
                     stack: ItemStack::EMPTY,
                 }]
                 .into(),
-                carried_item: ItemStack::new(ItemKind::GoldIngot, 2, None),
+                carried_item: ItemStack::new(ItemKind::GoldIngot, 2),
             },
             ContainerClickC2s {
                 window_id: VarInt(0),
@@ -723,7 +723,7 @@ mod tests {
                 slot_idx: 9,
                 slot_changes: vec![SlotChange {
                     idx: 9,
-                    stack: ItemStack::new(ItemKind::GoldIngot, 1, None),
+                    stack: ItemStack::new(ItemKind::GoldIngot, 1),
                 }]
                 .into(),
                 carried_item: ItemStack::EMPTY,
@@ -740,8 +740,8 @@ mod tests {
     #[test]
     fn allow_shift_click_overflow_to_new_stack() {
         let mut player_inventory = Inventory::new(InventoryKind::Player);
-        player_inventory.set_slot(9, ItemStack::new(ItemKind::Diamond, 64, None));
-        player_inventory.set_slot(36, ItemStack::new(ItemKind::Diamond, 32, None));
+        player_inventory.set_slot(9, ItemStack::new(ItemKind::Diamond, 64));
+        player_inventory.set_slot(36, ItemStack::new(ItemKind::Diamond, 32));
         let cursor_item = CursorItem::default();
 
         let packet = ContainerClickC2s {
@@ -753,11 +753,11 @@ mod tests {
             slot_changes: vec![
                 SlotChange {
                     idx: 37,
-                    stack: ItemStack::new(ItemKind::Diamond, 32, None),
+                    stack: ItemStack::new(ItemKind::Diamond, 32),
                 },
                 SlotChange {
                     idx: 36,
-                    stack: ItemStack::new(ItemKind::Diamond, 64, None),
+                    stack: ItemStack::new(ItemKind::Diamond, 64),
                 },
                 SlotChange {
                     idx: 9,
@@ -775,7 +775,7 @@ mod tests {
     #[test]
     fn allow_pickup_overfull_stack_click() {
         let mut player_inventory = Inventory::new(InventoryKind::Player);
-        player_inventory.set_slot(9, ItemStack::new(ItemKind::Apple, 100, None));
+        player_inventory.set_slot(9, ItemStack::new(ItemKind::Apple, 100));
         let cursor_item = CursorItem::default();
 
         let packet = ContainerClickC2s {
@@ -789,7 +789,7 @@ mod tests {
                 stack: ItemStack::EMPTY,
             }]
             .into(),
-            carried_item: ItemStack::new(ItemKind::Apple, 100, None),
+            carried_item: ItemStack::new(ItemKind::Apple, 100),
         };
 
         validate_click_slot_packet(&packet, &player_inventory, None, &cursor_item)
@@ -799,7 +799,7 @@ mod tests {
     #[test]
     fn allow_place_overfull_stack_click() {
         let player_inventory = Inventory::new(InventoryKind::Player);
-        let cursor_item = CursorItem(ItemStack::new(ItemKind::Apple, 100, None));
+        let cursor_item = CursorItem(ItemStack::new(ItemKind::Apple, 100));
 
         let packet = ContainerClickC2s {
             window_id: VarInt(0),
@@ -809,10 +809,10 @@ mod tests {
             mode: ClickMode::Click,
             slot_changes: vec![SlotChange {
                 idx: 9,
-                stack: ItemStack::new(ItemKind::Apple, 64, None),
+                stack: ItemStack::new(ItemKind::Apple, 64),
             }]
             .into(),
-            carried_item: ItemStack::new(ItemKind::Apple, 36, None),
+            carried_item: ItemStack::new(ItemKind::Apple, 36),
         };
 
         validate_click_slot_packet(&packet, &player_inventory, None, &cursor_item)

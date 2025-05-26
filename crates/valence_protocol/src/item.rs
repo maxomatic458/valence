@@ -12,15 +12,20 @@ use valence_text::{color::RgbColor, Text};
 
 use crate::{sound::SoundId, Decode, Encode, IDSet, VarInt};
 
+const NUM_ITEM_COMPONENTS: usize = 96;
+
 /// A stack of items in an inventory.
-#[derive(Clone, PartialEq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ItemStack {
     pub item: ItemKind,
     pub count: i8,
-    /// components added/overwritten of the default item components.
-    components_added: Vec<ItemComponent>,
-    /// components removed from the default components.
-    components_removed: Vec<u32>,
+    components: [Option<Box<ItemComponent>>; NUM_ITEM_COMPONENTS],
+}
+
+impl Default for ItemStack {
+    fn default() -> Self {
+        ItemStack::EMPTY
+    }
 }
 
 type StrIdent = Ident<String>;
@@ -743,62 +748,55 @@ impl ItemStack {
     pub const EMPTY: ItemStack = ItemStack {
         item: ItemKind::Air,
         count: 0,
-        components_added: vec![],
-        components_removed: vec![],
+        components: [const { None }; NUM_ITEM_COMPONENTS],
     };
 
     /// Creates a new item stack.
     /// 
     /// If `components` is `None` then the default components of the [`ItemKind`] will be used (see [`ItemKind::components`]).] 
     #[must_use]
-    pub fn new(item: ItemKind, count: i8, components: Option<Vec<ItemComponent>>) -> Self {
-        let mut item_stack = Self {
+    pub const fn new(item: ItemKind, count: i8) -> Self {
+        Self {
             item,
             count,
-            components_added: vec![],
-            components_removed: vec![],
-        };
+            components: [const { None }; NUM_ITEM_COMPONENTS],
+        } 
+    }
 
-        if let Some(components) = components {
-            item_stack.rebuild_components(components);
+    /// Creates a new item stack with the vanilla default components for the given [`ItemKind`].
+    pub fn new_vanilla(item: ItemKind, count: i8) -> Self {
+        let components = item.default_components();
+
+        Self {
+            item,
+            count,
+            components,
         }
-
-        item_stack
     }
 
     /// Read the components of the item stack.
-    pub fn components(&self) -> Vec<ItemComponent> {
-        let mut components = self.item.default_components();
-
-        components.retain(|c| !self.components_removed.contains(&c.id()));
-
-        for added in &self.components_added {
-            if let Some(idx) = components.iter().position(|c| c.id() == added.id()) {
-                components[idx] = added.clone();
-            } else {
-                components.push(added.clone());
-            }
-        }
-
-        components
+    pub fn components(&self) -> Vec<&ItemComponent> {
+        self.components
+            .iter()
+            .filter_map(|component| component.as_ref().map(|boxed| &**boxed))
+            .collect()
     }
 
-    /// Private function to set the `components_added` and `components_removed` fields.
-    fn rebuild_components(&mut self, components: Vec<ItemComponent>) {
-        let item_default_components = self.item.default_components();
+    /// Attach a component to the item stack.
+    pub fn insert_component(&mut self, component: ItemComponent) {
+        let id = component.id() as usize;
+        self.components[id] = Some(Box::new(component));
+    }
 
-        // Remove from default
-        for default in &item_default_components {
-            if !components.contains(default) {
-                self.components_removed.push(default.id());
-            }
-        }
-
-        // Add in addition to default
-        for component in components {
-            if !item_default_components.contains(&component) {
-                self.components_added.push(component);
-            }
+    /// Remove a component from the item stack by its ID, see [`ItemComponent::id`].
+    /// 
+    /// Returns the removed component if it was present, otherwise `None`.
+    pub fn remove_component(&mut self, id: u32) -> Option<ItemComponent> {
+        let id = id as usize;
+        if id < NUM_ITEM_COMPONENTS {
+            self.components[id].take().map(|boxed| *boxed)
+        } else {
+            None
         }
     }
 
@@ -814,13 +812,24 @@ impl ItemStack {
         self
     }
 
+    #[must_use]
+    pub fn with_components(mut self, components: Vec<ItemComponent>) -> Self {
+        for component in components {
+            self.insert_component(component);
+        }
+        self
+    }
+
     pub const fn is_empty(&self) -> bool {
         matches!(self.item, ItemKind::Air) || self.count <= 0
     }
 
-    /// Returns the default components for the [`itemKind`].
+    /// Returns the default components for the [`ItemKind`].
     pub fn default_components(&self) -> Vec<ItemComponent> {
         self.item.default_components()
+            .iter()
+            .filter_map(|component| component.as_ref().map(|boxed| *boxed.clone()))
+            .collect()
     }
 }
 
@@ -832,14 +841,31 @@ impl Encode for ItemStack {
             VarInt(self.count as i32).encode(&mut w)?;
             self.item.encode(&mut w)?;
 
-            VarInt(self.components_added.len() as i32).encode(&mut w)?;
-            VarInt(self.components_removed.len() as i32).encode(&mut w)?;
+            let default_components = self.item.default_components();
 
-            for component in &self.components_added {
+            let (components_added, components_removed) = {
+                let mut removed = Vec::new();
+                let mut added = Vec::new();
+                for i in 0..self.components.len() {
+                    if self.components[i] != default_components[i] {
+                        removed.push(i as u32);
+                        if let Some(component) = &self.components[i] {
+                            added.push(component);
+                        }
+                    }
+                }
+
+                (added, removed)
+            };
+
+            VarInt(components_added.len() as i32).encode(&mut w)?;
+            VarInt(components_removed.len() as i32).encode(&mut w)?;
+
+            for component in components_added {
                 component.encode(&mut w)?;
             }
 
-            for component in &self.components_removed {
+            for component in components_removed {
                 component.encode(&mut w)?;
             }
 
@@ -856,10 +882,13 @@ impl<'a> Decode<'a> for ItemStack {
         };
 
         let item = ItemKind::decode(r)?;
+
+        let default_components = item.default_components();
+
         let components_added_count = VarInt::decode(r)?.0 as usize;
         let components_removed_count = VarInt::decode(r)?.0 as usize;
-        let mut components_added = Vec::with_capacity(components_added_count);
-        let mut components_removed = Vec::with_capacity(components_removed_count);
+        let mut components_added: Vec<ItemComponent> = Vec::with_capacity(components_added_count);
+        let mut components_removed: Vec<u32> = Vec::with_capacity(components_removed_count);
 
         for _ in 0..components_added_count {
             let component = ItemComponent::decode(r)?;
@@ -867,33 +896,46 @@ impl<'a> Decode<'a> for ItemStack {
         }
 
         for _ in 0..components_removed_count {
-            let component = u32::decode(r)?;
-            components_removed.push(component);
+            let id = u32::decode(r)?;
+            components_removed.push(id);
+        }
+
+        let mut components = default_components;
+
+        for component in components_added {
+            let id = component.id() as usize;
+            components[id] = Some(Box::new(component));
+        }
+
+        for id in components_removed {
+            components[id as usize] = None;
         }
 
         Ok(ItemStack {
             item,
             count,
-            components_added,
-            components_removed,
-        })
+            components,
+        })        
     }
 }
 
 pub trait ItemKindExt {
     /// Returns the default components for the [`ItemKind`].
-    fn default_components(&self) -> Vec<ItemComponent>;
+    fn default_components(&self) -> [Option<Box<ItemComponent>>; NUM_ITEM_COMPONENTS];
 }
 
 impl ItemKindExt for ItemKind {
-    fn default_components(&self) -> Vec<ItemComponent> {
-        self.ser_components()
-            .into_iter()
-            .map(|component| {
-                let component = ItemComponent::from_serialized(component);
-                component
-            })
-            .collect()
+    fn default_components(&self) -> [Option<Box<ItemComponent>>; NUM_ITEM_COMPONENTS] {
+        let ser_default_components = self.ser_components();
+        let mut components = [const { None }; NUM_ITEM_COMPONENTS];
+
+        for component in ser_default_components {
+            let item_component = ItemComponent::from_serialized(component);
+            let id = item_component.id() as usize;
+            components[id] = Some(Box::new(item_component));
+        }
+
+        components
     }
 }
 
@@ -903,15 +945,15 @@ mod tests {
 
     #[test]
     fn empty_item_stack_is_empty() {
-        let air_stack = ItemStack::new(ItemKind::Air, 10, None);
-        let less_then_one_stack = ItemStack::new(ItemKind::Stone, 0, None);
+        let air_stack = ItemStack::new(ItemKind::Air, 10);
+        let less_then_one_stack = ItemStack::new(ItemKind::Stone, 0);
 
         assert!(air_stack.is_empty());
         assert!(less_then_one_stack.is_empty());
 
         assert!(ItemStack::EMPTY.is_empty());
 
-        let not_empty_stack = ItemStack::new(ItemKind::Stone, 10, None);
+        let not_empty_stack = ItemStack::new(ItemKind::Stone, 10);
 
         assert!(!not_empty_stack.is_empty());
     }

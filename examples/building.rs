@@ -82,7 +82,7 @@ fn init_clients(
         pos.set([0.0, f64::from(SPAWN_Y) + 1.0, 0.0]);
         *game_mode = GameMode::Creative;
 
-        inventory.set_slot(PlayerInventory::hotbar_to_slot(0), ItemStack::new(ItemKind::Stone, 20, None));
+        inventory.set_slot(PlayerInventory::hotbar_to_slot(0), ItemStack::new(ItemKind::Stone, 20));
 
         client.send_chat_message("Welcome to Valence! Build something cool.".italic());
     }
