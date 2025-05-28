@@ -97,8 +97,13 @@ pub enum ItemComponent {
     },
     /// Value for the item predicate when using custom item models.
     CustomModelData { value: VarInt },
-    /// Hides the item's tooltip altogether.
-    HideTooltip,
+    /// Allows you to hide all or parts of the item tooltip. 
+    TooltipDisplay {
+        /// Whether to hide the tooltip entirely. 
+        hide_tooltip: bool,
+        // The IDs of data components in the minecraft:data_component_type registry to hide. 
+        hidden_components: Vec<VarInt>,
+    },
     /// Accumulated anvil usage cost.
     RepairCost { cost: VarInt },
     /// Marks the item as non-interactive on the creative inventory (the first 5 rows of items).
@@ -357,7 +362,10 @@ pub enum ItemComponent {
         show_in_tooltip: bool,
     },
     /// marked as TODO on minecraft.wiki
-    ProvidesBannerPattern,
+    ProvidesBannerPatterns {
+        /// A pattern identifier like `#minecraft:pattern_item/globe`.
+        key: Ident<String>,
+    },
     /// The recipes this knowledge book unlocks.
     Recipes {
         /// Always a Compound Tag.
@@ -459,12 +467,122 @@ pub enum ItemComponent {
         /// Always a Compound Tag.
         data: Compound,
     },
-    // Marked as TODO on minecraft.wiki
+    /// Changes the sound that plays when the item breaks. 
     BreakSound {
-        /// The sound.
-        /// FIX: break_sound: Sound,
-        break_sound: Vec<u8>,
-    }
+        sound_event: SoundId,
+    },
+    /// The biome variant of a villager. 
+    VillagerVariant { 
+        /// An ID in the minecraft:villager_type registry. 
+        variant: VarInt,
+    },
+    /// The variant of a wolf. 
+    WolfVariant { 
+        /// An ID in the minecraft:wolf_variant registry. 
+        variant: VarInt,
+    },
+    /// The type of sounds that a wolf makes. 
+    WolfSoundVariant { 
+        /// An ID in the minecraft:wolf_sound_variant registry. 
+        variant: VarInt,
+    },
+    /// The dye color of the wolf's collar. 
+    WolfCollar { 
+        color: VarInt, // TODO: make this an enum https://minecraft.wiki/w/Java_Edition_protocol/Slot_data#Dye_Color
+    },
+    /// The variant of a fox. 
+    FoxVariant { 
+        /// 0: red, 1: snow. 
+        variant: VarInt,
+    },
+    ///
+    SalmonSize { 
+        /// 0: small, 1: medium, 2: large.
+        size: VarInt, 
+    },
+    /// The variant of a parrot. 
+    ParrotVariant { 
+        /// An ID in the minecraft:parrot_type registry.
+        variant: VarInt,
+    },
+    /// The pattern of a tropical fish. 
+    TropicalFishPattern { 
+        /// 0: kob, 1: sunstreak, 2: snooper, 3: dasher, 4: brinely, 5: spotty, 6: flopper, 7: stripey, 8: glitter, 9: blockfish, 10: betty, 11: clayfish. 
+        pattern: VarInt, // TODO: maybe also enum?
+    },
+    /// The base color of a tropical fish. 
+    TropicalFishBaseColor { 
+        color: VarInt, // TODO: make this an enum https://minecraft.wiki/w/Java_Edition_protocol/Slot_data#Dye_Color
+    },
+    /// The pattern color of a tropical fish. 
+    TropicalFishPatternColor { 
+        color: VarInt, // TODO: make this an enum https://minecraft.wiki/w/Java_Edition_protocol/Slot_data#Dye_Color
+    },
+    /// The variant of a mooshroom. 
+    MooshroomVariant { 
+        /// 0: red, 1: brown.
+        variant: VarInt,
+    },
+    /// The variant of a rabbit. 
+    RabbitVariant { 
+        // 0: brown, 1: white, 2: black, 3: white splotched, 4: gold, 5: salt, 6: evil.
+        variant: VarInt, // TODO: enum?
+    },
+    /// An ID in the minecraft:pig_variant registry. 
+    PigVariant { 
+        /// An ID in the minecraft:pig_variant registry. 
+        variant: VarInt,
+    },
+    /// The variant of a cow. 
+    CowVariant { 
+        /// An ID in the minecraft:cow_variant registry. 
+        variant: VarInt,
+    },
+    /// The variant of a chicken. 
+    ChickenVariant { 
+        // TODO: implement
+    },
+    /// The variant of a frog. 
+    FrogVariant { 
+        /// An ID in the minecraft:frog_variant registry. 
+        variant: VarInt,
+    },
+    /// The variant of a horse. 
+    HorseVariant { 
+        /// 0: white, 1: creamy, 2: chestnut, 3: brown, 4: black, 5: gray, 6: dark brown. 
+        variant: VarInt, // TODO: enum?
+    },
+    /// The variant of a painting. 
+    PaintingVariant { 
+        // TODO: implement
+    },
+    /// The variant of a llama. 
+    LlamaVariant { 
+        /// 0: creamy, 1: white, 2: brown, 3: gray.
+        variant: VarInt, // TODO: enum?
+    },
+    /// The variant of an axolotl. 
+    AxolotlVariant { 
+        /// 0: lucy, 1: wild, 2: gold, 3: cyan, 4: blue. 
+        variant: VarInt, // TODO: enum?
+    },
+    /// The variant of a cat. 
+    CatVariant { 
+        /// An ID in the minecraft:cat_variant registry.
+        variant: VarInt, // TODO: enum?
+    },
+    /// The dye color of the cat's collar. 
+    CatCollar { 
+        color: VarInt, // TODO: make this an enum https://minecraft.wiki/w/Java_Edition_protocol/Slot_data#Dye_Color
+    },
+    /// The color of a sheep. 
+    SheepColor { 
+        color: VarInt, // TODO: make this an enum https://minecraft.wiki/w/Java_Edition_protocol/Slot_data#Dye_Color
+    },
+    /// The color of a shulker. 
+    ShulkerColor { 
+        color: VarInt, // TODO: make this an enum https://minecraft.wiki/w/Java_Edition_protocol/Slot_data#Dye_Color
+    },
 }
 
 #[derive(Clone, PartialEq, Debug, Encode, Decode)]
@@ -629,11 +747,11 @@ impl ItemComponent {
             ItemComponent::CanBreak { .. } => 12,
             ItemComponent::AttributeModifiers { .. } => 13,
             ItemComponent::CustomModelData { .. } => 14,
-            ItemComponent::HideTooltip => 15,
+            ItemComponent::TooltipDisplay { .. } => 15,
             ItemComponent::RepairCost { .. } => 16,
-            ItemComponent::CreativeSlotLock => 17,
-            ItemComponent::EnchantmentGlintOverride {.. } => 18,
-            ItemComponent::IntangibleProjectile => 19,
+            ItemComponent::CreativeSlotLock { .. } => 17,
+            ItemComponent::EnchantmentGlintOverride { .. } => 18,
+            ItemComponent::IntangibleProjectile { .. } => 19,
             ItemComponent::Food { .. } => 20,
             ItemComponent::Consumable { .. } => 21,
             ItemComponent::UseRemainder { .. } => 22,
@@ -644,10 +762,10 @@ impl ItemComponent {
             ItemComponent::Enchantable { .. } => 27,
             ItemComponent::Equippable { .. } => 28,
             ItemComponent::Repairable { .. } => 29,
-            ItemComponent::Glider => 30,
+            ItemComponent::Glider { .. } => 30,
             ItemComponent::TooltipStyle { .. } => 31,
             ItemComponent::DeathProtection { .. } => 32,
-            ItemComponent::BlocksAttacks => 33,
+            ItemComponent::BlocksAttacks { .. } => 33,
             ItemComponent::StoredEnchantments { .. } => 34,
             ItemComponent::DyedColor { .. } => 35,
             ItemComponent::MapColor { .. } => 36,
@@ -667,10 +785,10 @@ impl ItemComponent {
             ItemComponent::BucketEntityData { .. } => 50,
             ItemComponent::BlockEntityData { .. } => 51,
             ItemComponent::Instrument { .. } => 52,
-            ItemComponent::ProvidesTrimMaterial => 53,
+            ItemComponent::ProvidesTrimMaterial { .. } => 53,
             ItemComponent::OminousBottleAmplifier { .. } => 54,
             ItemComponent::JukeboxPlayable { .. } => 55,
-            ItemComponent::ProvidesBannerPattern => 56,
+            ItemComponent::ProvidesBannerPatterns { .. } => 56,
             ItemComponent::Recipes { .. } => 57,
             ItemComponent::LodestoneTracker { .. } => 58,
             ItemComponent::FireworkExplosion { .. } => 59,
@@ -686,6 +804,30 @@ impl ItemComponent {
             ItemComponent::Lock { .. } => 69,
             ItemComponent::ContainerLoot { .. } => 70,
             ItemComponent::BreakSound { .. } => 71,
+            ItemComponent::VillagerVariant { .. } => 72,
+            ItemComponent::WolfVariant { .. } => 73,
+            ItemComponent::WolfSoundVariant { .. } => 74,
+            ItemComponent::WolfCollar { .. } => 75,
+            ItemComponent::FoxVariant { .. } => 76,
+            ItemComponent::SalmonSize { .. } => 77,
+            ItemComponent::ParrotVariant { .. } => 78,
+            ItemComponent::TropicalFishPattern { .. } => 79,
+            ItemComponent::TropicalFishBaseColor { .. } => 80,
+            ItemComponent::TropicalFishPatternColor { .. } => 81,
+            ItemComponent::MooshroomVariant { .. } => 82,
+            ItemComponent::RabbitVariant { .. } => 83,
+            ItemComponent::PigVariant { .. } => 84,
+            ItemComponent::CowVariant { .. } => 85,
+            ItemComponent::ChickenVariant { .. } => 86,
+            ItemComponent::FrogVariant { .. } => 87,
+            ItemComponent::HorseVariant { .. } => 88,
+            ItemComponent::PaintingVariant { .. } => 89,
+            ItemComponent::LlamaVariant { .. } => 90,
+            ItemComponent::AxolotlVariant { .. } => 91,
+            ItemComponent::CatVariant { .. } => 92,
+            ItemComponent::CatCollar { .. } => 93,
+            ItemComponent::SheepColor { .. } => 94,
+            ItemComponent::ShulkerColor { .. } => 95,
         }
     }
 
