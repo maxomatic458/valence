@@ -51,7 +51,7 @@ pub async fn make_session<'a>(params: &SessionParams<'a>) -> anyhow::Result<()> 
         protocol_version: VarInt(PROTOCOL_VERSION),
         server_address: server_addr_str.as_str().into(),
         server_port: sock_addr.port(),
-        next_state: HandShakeIntent::Login,
+        intent: HandShakeIntent::Login,
     };
 
     enc.append_packet(&handshake_pkt)?;

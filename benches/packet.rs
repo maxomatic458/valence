@@ -2,10 +2,10 @@ use std::borrow::Cow;
 use std::hint::black_box;
 
 use divan::Bencher;
-use valence::nbt::{compound, List};
 use valence::prelude::*;
 use valence::protocol::decode::PacketDecoder;
 use valence::protocol::encode::{PacketEncoder, PacketWriter, WritePacket};
+use valence::protocol::packets::play::level_chunk_with_light_s2c::{HeightMap, HeightMapKind};
 use valence::protocol::packets::play::{AddEntityS2c, LevelChunkWithLightS2c, TabListS2c};
 use valence::protocol::{ByteAngle, FixedArray, VarInt};
 use valence::text::IntoText;
@@ -21,13 +21,14 @@ pub(crate) fn setup<'a>() -> (
     let encoder = PacketEncoder::new();
 
     const BLOCKS_AND_BIOMES: [u8; 2000] = [0x80; 2000];
-    const SKY_LIGHT_ARRAYS: [FixedArray<u8, 2048>; 26] = [FixedArray([0xff; 2048]); 26];
+    static SKY_LIGHT_ARRAYS: [FixedArray<u8, 2048>; 26] = [FixedArray([0xff; 2048]); 26];
 
     let chunk_data_packet = LevelChunkWithLightS2c {
         pos: ChunkPos::new(123, 456),
-        heightmaps: Cow::Owned(compound! {
-            "MOTION_BLOCKING" => List::Long(vec![123; 256]),
-        }),
+        heightmaps: Cow::Owned(vec![HeightMap {
+            kind: HeightMapKind::MotionBlocking,
+            data: vec![123; 256],
+        }]),
         blocks_and_biomes: BLOCKS_AND_BIOMES.as_slice(),
         block_entities: Cow::Borrowed(&[]),
         sky_light_mask: Cow::Borrowed(&[]),

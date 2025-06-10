@@ -56,7 +56,7 @@ pub struct Text(Box<TextInner>);
 #[derive(Clone, PartialEq, Debug, Default, Serialize)]
 #[serde(transparent)]
 /// Will always be serialized as JSON instead of NBT for backwards
-/// compatibility. See https://minecraft.wiki/w/Java_Edition_protocol/Packets#Disconnect_(login)
+/// compatibility. See <https://minecraft.wiki/w/Java_Edition_protocol/Packets#Disconnect>_(login)
 pub struct JsonText(pub Text);
 
 /// Text data and formatting.
@@ -559,7 +559,7 @@ impl<T: IntoText<'static>> ops::AddAssign<T> for Text {
     }
 }
 
-impl<'a> From<Text> for Cow<'a, Text> {
+impl From<Text> for Cow<'_, Text> {
     fn from(value: Text) -> Self {
         Cow::Owned(value)
     }
