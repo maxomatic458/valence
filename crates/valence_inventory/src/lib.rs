@@ -110,7 +110,7 @@ impl Inventory {
     /// # use valence_inventory::*;
     /// # use valence_server::item::{ItemStack, ItemKind};
     /// let mut inv = Inventory::new(InventoryKind::Generic9x1);
-    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1, None));
+    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1));
     /// assert_eq!(inv.slot(0).item, ItemKind::Diamond);
     /// ```
     #[track_caller]
@@ -128,8 +128,8 @@ impl Inventory {
     /// # use valence_inventory::*;
     /// # use valence_server::item::{ItemStack, ItemKind};
     /// let mut inv = Inventory::new(InventoryKind::Generic9x1);
-    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1, None));
-    /// let old = inv.replace_slot(0, ItemStack::new(ItemKind::IronIngot, 1, None));
+    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1));
+    /// let old = inv.replace_slot(0, ItemStack::new(ItemKind::IronIngot, 1));
     /// assert_eq!(old.item, ItemKind::Diamond);
     /// ```
     #[track_caller]
@@ -154,7 +154,7 @@ impl Inventory {
     /// # use valence_inventory::*;
     /// # use valence_server::item::{ItemStack, ItemKind};
     /// let mut inv = Inventory::new(InventoryKind::Generic9x1);
-    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1, None));
+    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1));
     /// assert!(inv.slot(1).is_empty());
     /// inv.swap_slot(0, 1);
     /// assert_eq!(inv.slot(1).item, ItemKind::Diamond);
@@ -189,7 +189,7 @@ impl Inventory {
     /// # use valence_inventory::*;
     /// # use valence_server::item::{ItemStack, ItemKind};
     /// let mut inv = Inventory::new(InventoryKind::Generic9x1);
-    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1, None));
+    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1));
     /// inv.set_slot_amount(0, 64);
     /// assert_eq!(inv.slot(0).count, 64);
     /// ```
@@ -269,9 +269,9 @@ impl Inventory {
     /// # use valence_inventory::*;
     /// # use valence_server::item::*;
     /// let mut inv = Inventory::new(InventoryKind::Generic9x1);
-    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1, None));
-    /// inv.set_slot(2, ItemStack::new(ItemKind::GoldIngot, 1, None));
-    /// inv.set_slot(3, ItemStack::new(ItemKind::IronIngot, 1, None));
+    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1));
+    /// inv.set_slot(2, ItemStack::new(ItemKind::GoldIngot, 1));
+    /// inv.set_slot(3, ItemStack::new(ItemKind::IronIngot, 1));
     /// assert_eq!(inv.first_empty_slot_in(0..6), Some(1));
     /// assert_eq!(inv.first_empty_slot_in(2..6), Some(4));
     /// ```
@@ -293,9 +293,9 @@ impl Inventory {
     /// # use valence_inventory::*;
     /// # use valence_server::item::*;
     /// let mut inv = Inventory::new(InventoryKind::Generic9x1);
-    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1, None));
-    /// inv.set_slot(2, ItemStack::new(ItemKind::GoldIngot, 1, None));
-    /// inv.set_slot(3, ItemStack::new(ItemKind::IronIngot, 1, None));
+    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1));
+    /// inv.set_slot(2, ItemStack::new(ItemKind::GoldIngot, 1));
+    /// inv.set_slot(3, ItemStack::new(ItemKind::IronIngot, 1));
     /// assert_eq!(inv.first_empty_slot(), Some(1));
     /// ```
     #[inline]
@@ -309,10 +309,10 @@ impl Inventory {
     /// # use valence_inventory::*;
     /// # use valence_server::item::*;
     /// let mut inv = Inventory::new(InventoryKind::Generic9x1);
-    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1, None));
-    /// inv.set_slot(2, ItemStack::new(ItemKind::GoldIngot, 64, None));
-    /// inv.set_slot(3, ItemStack::new(ItemKind::IronIngot, 1, None));
-    /// inv.set_slot(4, ItemStack::new(ItemKind::GoldIngot, 1, None));
+    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1));
+    /// inv.set_slot(2, ItemStack::new(ItemKind::GoldIngot, 64));
+    /// inv.set_slot(3, ItemStack::new(ItemKind::IronIngot, 1));
+    /// inv.set_slot(4, ItemStack::new(ItemKind::GoldIngot, 1));
     /// assert_eq!(
     ///     inv.first_slot_with_item_in(ItemKind::GoldIngot, 64, 0..5),
     ///     Some(4)
@@ -343,10 +343,10 @@ impl Inventory {
     /// # use valence_inventory::*;
     /// # use valence_server::item::*;
     /// let mut inv = Inventory::new(InventoryKind::Generic9x1);
-    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1, None));
-    /// inv.set_slot(2, ItemStack::new(ItemKind::GoldIngot, 64, None));
-    /// inv.set_slot(3, ItemStack::new(ItemKind::IronIngot, 1, None));
-    /// inv.set_slot(4, ItemStack::new(ItemKind::GoldIngot, 1, None));
+    /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1));
+    /// inv.set_slot(2, ItemStack::new(ItemKind::GoldIngot, 64));
+    /// inv.set_slot(3, ItemStack::new(ItemKind::IronIngot, 1));
+    /// inv.set_slot(4, ItemStack::new(ItemKind::GoldIngot, 1));
     /// assert_eq!(inv.first_slot_with_item(ItemKind::GoldIngot, 64), Some(4));
     /// ```
     #[inline]
@@ -449,12 +449,12 @@ impl OpenInventory {
 /// # use valence_inventory::*;
 /// # use valence_server::item::*;
 /// let mut player_inventory = Inventory::new(InventoryKind::Player);
-/// player_inventory.set_slot(36, ItemStack::new(ItemKind::Diamond, 1, None));
+/// player_inventory.set_slot(36, ItemStack::new(ItemKind::Diamond, 1));
 ///
 /// let target_inventory = Inventory::new(InventoryKind::Generic9x3);
 /// let window = InventoryWindow::new(&player_inventory, Some(&target_inventory));
 ///
-/// assert_eq!(window.slot(54), &ItemStack::new(ItemKind::Diamond, 1, None));
+/// assert_eq!(window.slot(54), &ItemStack::new(ItemKind::Diamond, 1));
 /// ```
 pub struct InventoryWindow<'a> {
     player_inventory: &'a Inventory,
@@ -507,11 +507,11 @@ impl<'a> InventoryWindow<'a> {
 /// let mut target_inventory = Inventory::new(InventoryKind::Generic9x3);
 /// let mut window = InventoryWindowMut::new(&mut player_inventory, Some(&mut target_inventory));
 ///
-/// window.set_slot(54, ItemStack::new(ItemKind::Diamond, 1, None));
+/// window.set_slot(54, ItemStack::new(ItemKind::Diamond, 1));
 ///
 /// assert_eq!(
 ///     player_inventory.slot(36),
-///     &ItemStack::new(ItemKind::Diamond, 1, None)
+///     &ItemStack::new(ItemKind::Diamond, 1)
 /// );
 /// ```
 pub struct InventoryWindowMut<'a> {
