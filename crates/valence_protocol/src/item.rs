@@ -1040,13 +1040,15 @@ impl ItemStack {
         components: [const { Patchable::None }; NUM_ITEM_COMPONENTS],
     };
 
-    /// Creates a new item stack without any components.
+    /// Creates a new item stack with default components removed.
     #[must_use]
-    pub const fn new(item: ItemKind, count: i8) -> Self {
+    pub fn new(item: ItemKind, count: i8) -> Self {
+        let components = item.default_components_patchable_removed();
+
         Self {
             item,
             count,
-            components: [const { Patchable::None }; NUM_ITEM_COMPONENTS],
+            components,
         }
     }
 
@@ -1246,6 +1248,7 @@ pub trait ItemKindExt {
     fn default_components(&self) -> [Option<Box<ItemComponent>>; NUM_ITEM_COMPONENTS];
 
     fn default_components_patchable(&self) -> [Patchable<Box<ItemComponent>>; NUM_ITEM_COMPONENTS];
+    fn default_components_patchable_removed(&self) -> [Patchable<Box<ItemComponent>>; NUM_ITEM_COMPONENTS];
 }
 
 impl ItemKindExt for ItemKind {
@@ -1270,6 +1273,15 @@ impl ItemKindExt for ItemKind {
         for (i, component) in self.default_components().into_iter().enumerate() {
             if let Some(component) = component {
                 result[i] = Patchable::Default(component);
+            }
+        }
+        result
+    }
+    fn default_components_patchable_removed(&self) -> [Patchable<Box<ItemComponent>>; NUM_ITEM_COMPONENTS] {
+        let mut result = [const { Patchable::None }; NUM_ITEM_COMPONENTS];
+        for (i, component) in self.default_components().into_iter().enumerate() {
+            if let Some(_) = component {
+                result[i] = Patchable::Removed;
             }
         }
         result
