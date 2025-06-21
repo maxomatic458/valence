@@ -12,6 +12,7 @@ use crate::protocol::packets::play::{
 use crate::protocol::VarInt;
 use crate::testing::ScenarioSingleClient;
 use crate::{GameMode, ItemKind, ItemStack};
+use crate::item::HashedItemStack;
 
 #[test]
 fn test_should_open_inventory() {
@@ -158,10 +159,10 @@ fn test_should_modify_player_inventory_click_slot() {
         slot_idx: 20,
         slot_changes: vec![SlotChange {
             idx: 20,
-            stack: ItemStack::EMPTY,
+            stack: HashedItemStack::EMPTY,
         }]
         .into(),
-        carried_item: ItemStack::new(ItemKind::Diamond, 2),
+        carried_item: HashedItemStack::new(ItemKind::Diamond, 2),
     });
 
     app.update();
@@ -301,10 +302,10 @@ fn test_should_modify_open_inventory_click_slot() {
         mode: ClickMode::Click,
         slot_changes: vec![SlotChange {
             idx: 20,
-            stack: ItemStack::EMPTY,
+            stack: HashedItemStack::EMPTY,
         }]
         .into(),
-        carried_item: ItemStack::new(ItemKind::Diamond, 2),
+        carried_item: HashedItemStack::new(ItemKind::Diamond, 2),
     });
 
     app.update();
@@ -370,10 +371,10 @@ fn test_prevent_modify_open_inventory_click_slot_readonly_inventory() {
         mode: ClickMode::Click,
         slot_changes: vec![SlotChange {
             idx: 20,
-            stack: ItemStack::EMPTY,
+            stack: HashedItemStack::EMPTY,
         }]
         .into(),
-        carried_item: ItemStack::new(ItemKind::Diamond, 2),
+        carried_item: HashedItemStack::new(ItemKind::Diamond, 2),
     });
 
     app.update();
@@ -490,18 +491,18 @@ fn test_hotbar_item_swap_container() {
             // target slot.
             SlotChange {
                 idx: 0,
-                stack: ItemStack::new(ItemKind::Diamond, 1),
+                stack: HashedItemStack::new(ItemKind::Diamond, 1),
             },
             SlotChange {
                 // 54 is the players hotbar slot 1, when the 9x3 inventory is opnened.
                 idx: 54,
-                stack: ItemStack::new(ItemKind::IronIngot, 10),
+                stack: HashedItemStack::new(ItemKind::IronIngot, 10),
             },
             // The second one is the slot in the open inventory, after the ClickSlot action
             // source slot.
         ]
         .into(),
-        carried_item: ItemStack::EMPTY,
+        carried_item: HashedItemStack::EMPTY,
     });
 
     app.update();
@@ -591,18 +592,18 @@ fn test_prevent_hotbar_item_click_container_readonly_inventory() {
             // target slot.
             SlotChange {
                 idx: 0,
-                stack: ItemStack::new(ItemKind::Diamond, 1),
+                stack: HashedItemStack::new(ItemKind::Diamond, 1),
             },
             // The second one is the slot in the open inventory, after the ClickSlot action
             // source slot.
             SlotChange {
                 // 54 is the players hotbar slot 1, when the 9x3 inventory is opnened.
                 idx: 54,
-                stack: ItemStack::new(ItemKind::IronIngot, 10),
+                stack: HashedItemStack::new(ItemKind::IronIngot, 10),
             },
         ]
         .into(),
-        carried_item: ItemStack::EMPTY,
+        carried_item: HashedItemStack::EMPTY,
     });
 
     app.update();
@@ -689,15 +690,15 @@ fn test_still_allow_hotbar_item_click_in_own_inventory_if_container_readonly_inv
         slot_changes: vec![
             SlotChange {
                 idx: 27,
-                stack: ItemStack::new(ItemKind::Diamond, 10),
+                stack: HashedItemStack::new(ItemKind::Diamond, 10),
             },
             SlotChange {
                 idx: 54,
-                stack: ItemStack::EMPTY,
+                stack: HashedItemStack::EMPTY,
             },
         ]
         .into(),
-        carried_item: ItemStack::EMPTY,
+        carried_item: HashedItemStack::EMPTY,
     });
 
     app.update();
@@ -770,16 +771,16 @@ fn test_prevent_shift_item_click_container_readonly_inventory() {
             // target
             SlotChange {
                 idx: 0,
-                stack: ItemStack::new(ItemKind::Diamond, 64),
+                stack: HashedItemStack::new(ItemKind::Diamond, 64),
             },
             // source
             SlotChange {
                 idx: 27,
-                stack: ItemStack::EMPTY,
+                stack: HashedItemStack::EMPTY,
             },
         ]
         .into(),
-        carried_item: ItemStack::EMPTY,
+        carried_item: HashedItemStack::EMPTY,
     });
 
     app.update();
@@ -1316,7 +1317,7 @@ mod dropping_items {
             button: 0,
             mode: ClickMode::Click,
             slot_changes: vec![].into(),
-            carried_item: ItemStack::EMPTY,
+            carried_item: HashedItemStack::EMPTY,
         });
 
         app.update();
@@ -1377,10 +1378,10 @@ mod dropping_items {
             state_id: VarInt(state_id),
             slot_changes: vec![SlotChange {
                 idx: 40,
-                stack: ItemStack::new(ItemKind::IronIngot, 31),
+                stack: HashedItemStack::new(ItemKind::IronIngot, 31),
             }]
             .into(),
-            carried_item: ItemStack::EMPTY,
+            carried_item: HashedItemStack::EMPTY,
         });
 
         app.update();
@@ -1435,10 +1436,10 @@ mod dropping_items {
             state_id: VarInt(state_id),
             slot_changes: vec![SlotChange {
                 idx: 40,
-                stack: ItemStack::new(ItemKind::IronIngot, 31),
+                stack: HashedItemStack::new(ItemKind::IronIngot, 31),
             }]
             .into(),
-            carried_item: ItemStack::EMPTY,
+            carried_item: HashedItemStack::EMPTY,
         });
 
         app.update();
@@ -1501,10 +1502,10 @@ mod dropping_items {
             state_id: VarInt(state_id),
             slot_changes: vec![SlotChange {
                 idx: 40,
-                stack: ItemStack::EMPTY,
+                stack: HashedItemStack::EMPTY,
             }]
             .into(),
-            carried_item: ItemStack::EMPTY,
+            carried_item: HashedItemStack::EMPTY,
         });
 
         app.update();
@@ -1559,10 +1560,10 @@ mod dropping_items {
             state_id: VarInt(state_id),
             slot_changes: vec![SlotChange {
                 idx: 40,
-                stack: ItemStack::EMPTY,
+                stack: HashedItemStack::EMPTY,
             }]
             .into(),
-            carried_item: ItemStack::EMPTY,
+            carried_item: HashedItemStack::EMPTY,
         });
 
         app.update();
@@ -1636,10 +1637,10 @@ mod dropping_items {
             mode: ClickMode::DropKey,
             slot_changes: vec![SlotChange {
                 idx: 50,
-                stack: ItemStack::new(ItemKind::IronIngot, 31),
+                stack: HashedItemStack::new(ItemKind::IronIngot, 31),
             }]
             .into(),
-            carried_item: ItemStack::EMPTY,
+            carried_item: HashedItemStack::EMPTY,
         });
 
         app.update();
@@ -1719,10 +1720,10 @@ mod dropping_items {
             mode: ClickMode::DropKey,
             slot_changes: vec![SlotChange {
                 idx: 50,
-                stack: ItemStack::new(ItemKind::IronIngot, 31),
+                stack: HashedItemStack::new(ItemKind::IronIngot, 31),
             }]
             .into(),
-            carried_item: ItemStack::EMPTY,
+            carried_item: HashedItemStack::EMPTY,
         });
 
         app.update();
@@ -1798,10 +1799,10 @@ fn should_drop_item_stack_player_open_inventory_with_dropkey() {
         mode: ClickMode::DropKey,
         slot_changes: vec![SlotChange {
             idx: 50,
-            stack: ItemStack::EMPTY,
+            stack: HashedItemStack::EMPTY,
         }]
         .into(),
-        carried_item: ItemStack::EMPTY,
+        carried_item: HashedItemStack::EMPTY,
     });
 
     app.update();
@@ -1864,19 +1865,19 @@ fn dragging_items() {
         slot_changes: vec![
             SlotChange {
                 idx: 9,
-                stack: ItemStack::new(ItemKind::Diamond, 21),
+                stack: HashedItemStack::new(ItemKind::Diamond, 21),
             },
             SlotChange {
                 idx: 10,
-                stack: ItemStack::new(ItemKind::Diamond, 21),
+                stack: HashedItemStack::new(ItemKind::Diamond, 21),
             },
             SlotChange {
                 idx: 11,
-                stack: ItemStack::new(ItemKind::Diamond, 21),
+                stack: HashedItemStack::new(ItemKind::Diamond, 21),
             },
         ]
         .into(),
-        carried_item: ItemStack::new(ItemKind::Diamond, 1),
+        carried_item: HashedItemStack::new(ItemKind::Diamond, 1),
     };
     helper.send(&drag_packet);
 

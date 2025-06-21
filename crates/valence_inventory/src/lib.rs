@@ -974,9 +974,14 @@ fn handle_click_slot(
                         });
                         continue;
                     }
-
+                    
                     let slot_id =
                         convert_to_player_slot_id(target_inventory.kind, pkt.slot_idx as u16);
+                    
+                    // Player clicked outside of inv with no carried item                 
+                    if slot_id > client_inv.slot_count() {
+                        continue;
+                    }
 
                     let stack = client_inv.slot(slot_id);
 
@@ -1011,6 +1016,11 @@ fn handle_click_slot(
                         slots: Cow::Borrowed(client_inv.slot_slice()),
                         carried_item: Cow::Borrowed(&cursor_item.0),
                     });
+                    continue;
+                }
+                
+                // Player clicked outside of inv with no carried item                 
+                if pkt.slot_idx as u16 > client_inv.slot_count() {
                     continue;
                 }
 
