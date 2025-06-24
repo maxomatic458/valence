@@ -12,11 +12,14 @@ import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.data.TrackedDataHandler;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.passive.ArmadilloEntity;
+import net.minecraft.entity.passive.LlamaEntity;
+import net.minecraft.entity.passive.ParrotEntity;
 import net.minecraft.entity.passive.SnifferEntity;
 import net.minecraft.network.packet.s2c.play.EntityAnimationS2CPacket;
 import net.minecraft.registry.*;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.Direction;
 import rs.valence.extractor.Main;
 
@@ -89,8 +92,8 @@ public class Misc implements Main.Extractor {
         var villagerProfessionJson = new JsonObject();
         for (var profession : Registries.VILLAGER_PROFESSION) {
             villagerProfessionJson.addProperty(
-                profession.id().getString().toLowerCase(),
-                Registries.VILLAGER_PROFESSION.getRawId(profession)
+                    profession.id().getString().toLowerCase(),
+                    Registries.VILLAGER_PROFESSION.getRawId(profession)
             );
         }
         miscJson.add("villager_profession", villagerProfessionJson);
@@ -281,6 +284,11 @@ public class Misc implements Main.Extractor {
         }
         miscJson.add("tracked_data_handler", trackedDataHandlerJson);
 
+        var dyeColorJson = new JsonObject();
+        for (var color : DyeColor.values()) {
+            dyeColorJson.addProperty(color.getId().toLowerCase(Locale.ROOT), color.getIndex());
+        }
+        miscJson.add("dye_color", dyeColorJson);
 
         var componentTypeJson = new JsonObject();
         int id = 0;

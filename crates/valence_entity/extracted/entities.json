@@ -11576,7 +11576,7 @@
         "type": "villager_data",
         "default_value": {
           "type": "plains",
-          "profession": "none",
+          "profession": "fletcher",
           "level": 1
         }
       }
