@@ -924,7 +924,8 @@ impl ItemStack {
         components: [const { Patchable::None }; NUM_ITEM_COMPONENTS],
     };
 
-    /// Creates a new item stack with default components removed.
+    /// Creates a new item stack with the vanilla default components for the
+    /// given [`ItemKind`].
     #[must_use]
     pub fn new(item: ItemKind, count: i8) -> Self {
         let components = item.default_components();
@@ -936,15 +937,13 @@ impl ItemStack {
         }
     }
 
-    /// Creates a new item stack with the vanilla default components for the
-    /// given [`ItemKind`].
-    pub fn new_vanilla_removed(item: ItemKind, count: i8) -> Self {
-        let components = item.default_components();
-
+    /// Creates a new item stack without any components, please note that the client still
+    /// has the default components, but in this case, the server is not aware of them
+    pub const  fn with_empty_components(item: ItemKind, count: i8) -> Self {
         Self {
             item,
             count,
-            components,
+            components: [const { Patchable::None }; NUM_ITEM_COMPONENTS],
         }
     }
 
@@ -1042,8 +1041,6 @@ impl Encode for ItemStack {
         } else {
             VarInt(i32::from(self.count)).encode(&mut w)?;
             self.item.encode(&mut w)?;
-
-            let default_components = self.item.default_components();
 
             let (components_added, components_removed) = {
                 let mut removed: Vec<VarInt> = Vec::new();
