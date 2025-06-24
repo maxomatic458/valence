@@ -17,27 +17,10 @@ const NUM_ITEM_COMPONENTS: usize = 96;
 
 #[derive(Clone, PartialEq, Debug, Copy)]
 pub enum Patchable<T> {
-    Default(T),
+    Default,
     Added((T, i32)),
     Removed,
     None,
-}
-
-impl <T> Patchable<T> {
-    fn to_option(self) -> Option<T> {
-        match self {
-            Patchable::Added((v, _)) => Some(v),
-            Patchable::Default(v) => Some(v),
-            _ => None,
-        }
-    }
-    fn to_option_ref(&self) -> Option<&T> {
-        match self {
-            Patchable::Added((v, _)) => Some(v),
-            Patchable::Default(v) => Some(v),
-            _ => None,
-        }
-    }
 }
 
 /// A stack of items in an inventory.
@@ -921,107 +904,6 @@ pub struct ToolRule {
 }
 
 impl ItemComponent {
-    pub fn id(&self) -> u32 {
-        match self {
-            ItemComponent::CustomData { .. } => 0,
-            ItemComponent::MaxStackSize { .. } => 1,
-            ItemComponent::MaxDamage { .. } => 2,
-            ItemComponent::Damage { .. } => 3,
-            ItemComponent::Unbreakable => 4,
-            ItemComponent::CustomName { .. } => 5,
-            ItemComponent::ItemName { .. } => 6,
-            ItemComponent::ItemModel { .. } => 7,
-            ItemComponent::Lore { .. } => 8,
-            ItemComponent::Rarity { .. } => 9,
-            ItemComponent::Enchantments { .. } => 10,
-            ItemComponent::CanPlaceOn { .. } => 11,
-            ItemComponent::CanBreak { .. } => 12,
-            ItemComponent::AttributeModifiers { .. } => 13,
-            ItemComponent::CustomModelData { .. } => 14,
-            ItemComponent::TooltipDisplay { .. } => 15,
-            ItemComponent::RepairCost { .. } => 16,
-            ItemComponent::CreativeSlotLock => 17,
-            ItemComponent::EnchantmentGlintOverride { .. } => 18,
-            ItemComponent::IntangibleProjectile => 19,
-            ItemComponent::Food { .. } => 20,
-            ItemComponent::Consumable { .. } => 21,
-            ItemComponent::UseRemainder { .. } => 22,
-            ItemComponent::UseCooldown { .. } => 23,
-            ItemComponent::DamageResistant { .. } => 24,
-            ItemComponent::Tool { .. } => 25,
-            ItemComponent::Weapon { .. } => 26,
-            ItemComponent::Enchantable { .. } => 27,
-            ItemComponent::Equippable { .. } => 28,
-            ItemComponent::Repairable { .. } => 29,
-            ItemComponent::Glider => 30,
-            ItemComponent::TooltipStyle { .. } => 31,
-            ItemComponent::DeathProtection { .. } => 32,
-            ItemComponent::BlocksAttacks { .. } => 33,
-            ItemComponent::StoredEnchantments { .. } => 34,
-            ItemComponent::DyedColor { .. } => 35,
-            ItemComponent::MapColor { .. } => 36,
-            ItemComponent::MapId { .. } => 37,
-            ItemComponent::MapDecorations { .. } => 38,
-            ItemComponent::MapPostProcessing { .. } => 39,
-            ItemComponent::ChargedProjectiles { .. } => 40,
-            ItemComponent::BundleContents { .. } => 41,
-            ItemComponent::PotionContents { .. } => 42,
-            ItemComponent::PotionDurationScale { .. } => 43,
-            ItemComponent::SuspiciousStewEffects { .. } => 44,
-            ItemComponent::WritableBookContent { .. } => 45,
-            ItemComponent::WrittenBookContent { .. } => 46,
-            ItemComponent::Trim { .. } => 47,
-            ItemComponent::DebugStickState { .. } => 48,
-            ItemComponent::EntityData { .. } => 49,
-            ItemComponent::BucketEntityData { .. } => 50,
-            ItemComponent::BlockEntityData { .. } => 51,
-            ItemComponent::Instrument { .. } => 52,
-            ItemComponent::ProvidesTrimMaterial => 53,
-            ItemComponent::OminousBottleAmplifier { .. } => 54,
-            ItemComponent::JukeboxPlayable { .. } => 55,
-            ItemComponent::ProvidesBannerPatterns { .. } => 56,
-            ItemComponent::Recipes { .. } => 57,
-            ItemComponent::LodestoneTracker { .. } => 58,
-            ItemComponent::FireworkExplosion { .. } => 59,
-            ItemComponent::Fireworks { .. } => 60,
-            ItemComponent::Profile { .. } => 61,
-            ItemComponent::NoteBlockSound { .. } => 62,
-            ItemComponent::BannerPatterns { .. } => 63,
-            ItemComponent::BaseColor { .. } => 64,
-            ItemComponent::PotDecorations { .. } => 65,
-            ItemComponent::Container { .. } => 66,
-            ItemComponent::BlockState { .. } => 67,
-            ItemComponent::Bees { .. } => 68,
-            ItemComponent::Lock { .. } => 69,
-            ItemComponent::ContainerLoot { .. } => 70,
-            ItemComponent::BreakSound { .. } => 71,
-            ItemComponent::VillagerVariant { .. } => 72,
-            ItemComponent::WolfVariant { .. } => 73,
-            ItemComponent::WolfSoundVariant { .. } => 74,
-            ItemComponent::WolfCollar { .. } => 75,
-            ItemComponent::FoxVariant { .. } => 76,
-            ItemComponent::SalmonSize { .. } => 77,
-            ItemComponent::ParrotVariant { .. } => 78,
-            ItemComponent::TropicalFishPattern { .. } => 79,
-            ItemComponent::TropicalFishBaseColor { .. } => 80,
-            ItemComponent::TropicalFishPatternColor { .. } => 81,
-            ItemComponent::MooshroomVariant { .. } => 82,
-            ItemComponent::RabbitVariant { .. } => 83,
-            ItemComponent::PigVariant { .. } => 84,
-            ItemComponent::CowVariant { .. } => 85,
-            ItemComponent::ChickenVariant { .. } => 86,
-            ItemComponent::FrogVariant { .. } => 87,
-            ItemComponent::HorseVariant { .. } => 88,
-            ItemComponent::PaintingVariant { .. } => 89,
-            ItemComponent::LlamaVariant { .. } => 90,
-            ItemComponent::AxolotlVariant { .. } => 91,
-            ItemComponent::CatVariant { .. } => 92,
-            ItemComponent::CatCollar { .. } => 93,
-            ItemComponent::SheepColor { .. } => 94,
-            ItemComponent::ShulkerColor { .. } => 95,
-        }
-    }
-
     pub fn hash(&self) -> i32 {
         0
     }
@@ -1033,6 +915,8 @@ impl ItemComponent {
     // }
 }
 
+include!(concat!(env!("OUT_DIR"), "/item_component.rs"));
+
 impl ItemStack {
     pub const EMPTY: ItemStack = ItemStack {
         item: ItemKind::Air,
@@ -1043,7 +927,7 @@ impl ItemStack {
     /// Creates a new item stack with default components removed.
     #[must_use]
     pub fn new(item: ItemKind, count: i8) -> Self {
-        let components = item.default_components_patchable_removed();
+        let components = item.default_components();
 
         Self {
             item,
@@ -1054,8 +938,8 @@ impl ItemStack {
 
     /// Creates a new item stack with the vanilla default components for the
     /// given [`ItemKind`].
-    pub fn new_vanilla(item: ItemKind, count: i8) -> Self {
-        let components = item.default_components_patchable();
+    pub fn new_vanilla_removed(item: ItemKind, count: i8) -> Self {
+        let components = item.default_components();
 
         Self {
             item,
@@ -1070,7 +954,6 @@ impl ItemStack {
             .iter()
             .filter_map(|component| match component {
                 Patchable::Added((v, _)) => Some(&**v),
-                Patchable::Default(v) => Some(&**v),
                 _ => None,
             })
             .collect()
@@ -1078,11 +961,7 @@ impl ItemStack {
 
     /// Returns the default components for the [`ItemKind`].
     pub fn default_components(&self) -> Vec<ItemComponent> {
-        self.item
-            .default_components()
-            .iter()
-            .filter_map(|component| component.as_ref().map(|boxed| *boxed.clone()))
-            .collect()
+        todo!("Lets to default vales a later date")
     }
 
     /// Attach a component to the item stack.
@@ -1099,8 +978,10 @@ impl ItemStack {
     pub fn remove_component<I: Into<usize>>(&mut self, id: I) -> Option<ItemComponent> {
         let id = id.into();
         if id < NUM_ITEM_COMPONENTS {
-            let removed_state = self.item.default_components()[id].as_ref().map_or(Patchable::None, |_| Patchable::Removed);
-            mem::replace(&mut self.components[id], removed_state).to_option().map(|boxed| *boxed)
+            match mem::replace(&mut self.components[id],  Patchable::Removed) { 
+                Patchable::Added((boxed, _)) => Some(*boxed),
+                _ => None,
+            }
         } else {
             None
         }
@@ -1110,7 +991,10 @@ impl ItemStack {
     pub fn get_component<I: Into<usize>>(&self, id: I) -> Option<&ItemComponent> {
         let id = id.into();
         if id < NUM_ITEM_COMPONENTS {
-            self.components[id].to_option_ref().map(|boxed| &**boxed)
+            match &self.components[id] {
+                Patchable::Added((component, _)) => Some(&**component),
+                _ => None,
+            }
         } else {
             None
         }
@@ -1122,7 +1006,6 @@ impl ItemStack {
             .iter_mut()
             .filter_map(|component| match component {
                 Patchable::Added((v, _)) => Some(&mut **v),
-                Patchable::Default(v) => Some(&mut **v),
                 _ => None,
             })
     }
@@ -1202,7 +1085,7 @@ impl<'a> Decode<'a> for ItemStack {
 
         let item = ItemKind::decode(r)?;
 
-        let default_components = item.default_components_patchable();
+        let default_components = item.default_components();
 
         let components_added_count = VarInt::decode(r)?.0 as usize;
         let components_removed_count = VarInt::decode(r)?.0 as usize;
@@ -1240,51 +1123,6 @@ impl<'a> Decode<'a> for ItemStack {
             count,
             components,
         })
-    }
-}
-
-pub trait ItemKindExt {
-    /// Returns the default components for the [`ItemKind`].
-    fn default_components(&self) -> [Option<Box<ItemComponent>>; NUM_ITEM_COMPONENTS];
-
-    fn default_components_patchable(&self) -> [Patchable<Box<ItemComponent>>; NUM_ITEM_COMPONENTS];
-    fn default_components_patchable_removed(&self) -> [Patchable<Box<ItemComponent>>; NUM_ITEM_COMPONENTS];
-}
-
-impl ItemKindExt for ItemKind {
-    fn default_components(&self) -> [Option<Box<ItemComponent>>; NUM_ITEM_COMPONENTS] {
-        //     let ser_default_components = self.ser_components();
-        //     let mut components = [const { None }; NUM_ITEM_COMPONENTS];
-
-        //     for component in ser_default_components {
-        //         let item_component = ItemComponent::from_serialized(component);
-        //         let id = item_component.id() as usize;
-        //         components[id] = Some(Box::new(item_component));
-        //     }
-
-        //     components
-        // }
-
-        [const { None }; NUM_ITEM_COMPONENTS]
-    }
-
-    fn default_components_patchable(&self) -> [Patchable<Box<ItemComponent>>; NUM_ITEM_COMPONENTS] {
-        let mut result = [const { Patchable::None }; NUM_ITEM_COMPONENTS];
-        for (i, component) in self.default_components().into_iter().enumerate() {
-            if let Some(component) = component {
-                result[i] = Patchable::Default(component);
-            }
-        }
-        result
-    }
-    fn default_components_patchable_removed(&self) -> [Patchable<Box<ItemComponent>>; NUM_ITEM_COMPONENTS] {
-        let mut result = [const { Patchable::None }; NUM_ITEM_COMPONENTS];
-        for (i, component) in self.default_components().into_iter().enumerate() {
-            if let Some(_) = component {
-                result[i] = Patchable::Removed;
-            }
-        }
-        result
     }
 }
 

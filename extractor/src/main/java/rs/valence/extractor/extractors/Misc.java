@@ -3,7 +3,10 @@ package rs.valence.extractor.extractors;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.lang.reflect.Modifier;
+import java.util.Iterator;
 import java.util.Locale;
+
+import net.minecraft.component.ComponentType;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.data.TrackedDataHandler;
@@ -12,6 +15,7 @@ import net.minecraft.entity.passive.ArmadilloEntity;
 import net.minecraft.entity.passive.SnifferEntity;
 import net.minecraft.network.packet.s2c.play.EntityAnimationS2CPacket;
 import net.minecraft.registry.*;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.Direction;
 import rs.valence.extractor.Main;
@@ -276,6 +280,18 @@ public class Misc implements Main.Extractor {
             }
         }
         miscJson.add("tracked_data_handler", trackedDataHandlerJson);
+
+
+        var componentTypeJson = new JsonObject();
+        int id = 0;
+        for (Iterator<RegistryEntry.Reference<ComponentType<?>>> it = registryManager
+                .getOrThrow(RegistryKeys.DATA_COMPONENT_TYPE)
+                .streamEntries()
+                .toList().iterator(); it.hasNext(); id++) {
+            ComponentType<?> type = it.next().value();
+            componentTypeJson.addProperty(type.toString(), id);
+        }
+        miscJson.add("component_data_type", componentTypeJson);
 
         return miscJson;
     }
