@@ -1,25 +1,30 @@
 package rs.valence.extractor.extractors;
 
+import com.google.common.hash.HashCode;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.lang.reflect.Modifier;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Optional;
 
+import com.mojang.serialization.DataResult;
 import net.minecraft.component.ComponentType;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.UseCooldownComponent;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.data.TrackedDataHandler;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.passive.ArmadilloEntity;
-import net.minecraft.entity.passive.LlamaEntity;
-import net.minecraft.entity.passive.ParrotEntity;
 import net.minecraft.entity.passive.SnifferEntity;
 import net.minecraft.network.packet.s2c.play.EntityAnimationS2CPacket;
 import net.minecraft.registry.*;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.dynamic.HashCodeOps;
 import net.minecraft.util.math.Direction;
 import rs.valence.extractor.Main;
 
@@ -177,6 +182,12 @@ public class Misc implements Main.Extractor {
             );
         }
         miscJson.add("cow_variant", cowVariant);
+
+
+        UseCooldownComponent usecooldown = new UseCooldownComponent(10, Optional.of(Identifier.of("minecraft", "test")));
+        DataResult<HashCode> encode = DataComponentTypes.USE_COOLDOWN.getCodec().encode(usecooldown, HashCodeOps.INSTANCE, HashCode.fromInt(0));
+        System.out.println(encode.result().get().asInt());
+        DataComponentTypes.DEATH_PROTECTION.
 
         var chickenVariant = new JsonObject();
         for (var variant : registryManager.getOrThrow(

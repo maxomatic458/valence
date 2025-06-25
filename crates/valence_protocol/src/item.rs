@@ -5,7 +5,6 @@ pub use valence_generated::item::ItemKind;
 pub use valence_generated::sound::Sound;
 use crate::{Decode, Encode, VarInt};
 use crate::item_component::ItemComponent;
-use crate::hash_utils::AdvWriter;
 
 const NUM_ITEM_COMPONENTS: usize = 96;
 

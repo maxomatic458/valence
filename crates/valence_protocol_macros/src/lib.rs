@@ -10,7 +10,16 @@ use syn::{
 
 mod decode;
 mod encode;
+mod hash_ops;
 mod packet;
+
+#[proc_macro_derive(HashOps)]
+pub fn derive_hash_ops(item: StdTokenStream) -> StdTokenStream {
+    match hash_ops::derive_hash_ops(item.into()) { 
+        Ok(tokens) => tokens.into(),
+        Err(e) => e.into_compile_error().into(),
+    }
+}
 
 #[proc_macro_derive(Encode, attributes(packet))]
 pub fn derive_encode(item: StdTokenStream) -> StdTokenStream {

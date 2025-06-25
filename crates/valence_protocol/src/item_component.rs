@@ -1,18 +1,22 @@
+use std::hash::Hasher;
+use crate::hash_utils::{HashOps, HashOpsHashable};
+use crate::sound::{SoundDirect, SoundId};
+use crate::{Decode, Encode, IDSet, VarInt};
 use std::io::Write;
 use valence_generated::attributes::{EntityAttribute, EntityAttributeOperation};
 use valence_generated::registry_id::RegistryId;
 use valence_ident::Ident;
 use valence_nbt::Compound;
+use valence_protocol_macros::HashOps;
 use valence_text::color::RgbColor;
 use valence_text::Text;
-use crate::{Decode, Encode, IDSet, VarInt};
-use crate::sound::{SoundDirect, SoundId};
 
 include!(concat!(env!("OUT_DIR"), "/item_component.rs"));
 
 type StrIdent = Ident<String>;
 
 #[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[repr(i16)]
 pub enum Rarity {
     Common,
     Uncommon,
@@ -32,7 +36,7 @@ impl Rarity {
     }
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub enum ConsumeEffect {
     ApplyEffects {
         effects: Vec<PotionEffect>,
@@ -52,15 +56,14 @@ pub enum ConsumeEffect {
 
 /// Describes all the aspects of a potion effect.
 // TODO: move this somewhere else
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub struct PotionEffect {
     /// The ID of the effect in the potion effect type registry.
     pub id: VarInt,
     pub details: PotionEffectDetails,
-
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub struct PotionEffectDetails {
     pub amplifier: VarInt,
     /// -1 for infinite.
@@ -74,7 +77,7 @@ pub struct PotionEffectDetails {
     // pub hidden_effect: Option<Box<PotionEffectDetails>>,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub struct DamageReduction {
     pub horizontal_blocking_angle: f32,
     /// IDs in the `minecraft:damage_kind` registry.
@@ -83,14 +86,14 @@ pub struct DamageReduction {
     pub factor: f32,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub struct BlockPredicate {
     pub blocks: Option<IDSet>,
     pub properties: Option<Vec<Property>>,
     pub nbt: Option<Compound>,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, HashOps)]
 pub struct Property {
     pub name: String,
     pub is_exact_match: bool,
@@ -146,7 +149,7 @@ impl<'a> Decode<'a> for Property {
 }
 
 // TODO: this is wrong
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub struct ItemAttribute {
     pub effect: EntityAttribute,
     pub uuid: uuid::Uuid,
@@ -156,7 +159,7 @@ pub struct ItemAttribute {
     pub slot: AttributeSlot,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub enum AttributeSlot {
     Any,
     MainHand,
@@ -170,7 +173,7 @@ pub enum AttributeSlot {
     Body,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub enum EquipSlot {
     Hand,
     Feet,
@@ -181,13 +184,13 @@ pub enum EquipSlot {
     Body,
 }
 
-#[derive(Clone, Copy, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, Copy, PartialEq, Debug, Encode, Decode, HashOps)]
 pub enum MapPostProcessingType {
     Lock,
     Expand,
 }
 
-#[derive(Clone, Copy, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, Copy, PartialEq, Debug, Encode, Decode, HashOps)]
 pub enum ConsumableAnimation {
     None,
     Eat,
@@ -201,75 +204,51 @@ pub enum ConsumableAnimation {
     Brush,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub struct ToolRule {
     pub blocks: IDSet,
     pub speed: Option<f32>,
     pub correct_drop_for_blocks: Option<bool>,
 }
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub enum ItemComponent {
     /// Customizable data that doesn't fit any specific component.
-    CustomData {
-        /// Always a Compound Tag.
-        data: Compound,
-    },
+    /// Always a Compound Tag.
+    CustomData(Compound),
     /// Maximum stack size for the item.
-    MaxStackSize {
-        /// Ranges from 1 to 99.
-        max_stack_size: VarInt,
-    },
+    /// Ranges from 1 to 99.
+    MaxStackSize(VarInt),
     /// The maximum damage the item can take before breaking.
-    MaxDamage {
-        max_damage: VarInt,
-    },
+    MaxDamage(VarInt),
     /// The current damage of the item.
-    Damage {
-        damage: VarInt,
-    },
+    Damage(VarInt),
     /// Marks the item as unbreakable.
     Unbreakable,
     /// Item's custom name. Normally shown in italic, and changeable at an
     /// anvil.
-    CustomName {
-        name: Text,
-    },
+    CustomName(Text),
     /// Override for the item's default name. Shown when the item has no custom
     /// name.
-    ItemName {
-        name: Text,
-    },
+    ItemName(Text),
     /// Item's model.
-    ItemModel {
-        /// The model identifier.
-        model: StrIdent,
-    },
+    /// The model identifier.
+    ItemModel(StrIdent),
     /// Item's lore.
-    Lore {
-        /// The lore lines.
-        lines: Vec<Text>,
-    },
+    /// The lore lines.
+    Lore(Vec<Text>),
     /// Item's rarity. This affects the default color of the item's name.
-    Rarity {
-        rarity: Rarity,
-    },
+    Rarity(Rarity),
     /// The enchantments of the item.
-    Enchantments {
-        /// The enchantments. (The ID of the enchantment in the enchantment
-        /// registry, The level of the enchantment)
-        enchantments: Vec<(VarInt, VarInt)>,
-    },
+    /// The enchantments. (The ID of the enchantment in the enchantment
+    /// registry, The level of the enchantment)
+    Enchantments(Vec<(VarInt, VarInt)>),
     /// List of blocks this block can be placed on when in adventure mode.
-    CanPlaceOn {
-        /// The block predicates.
-        block_predicates: Vec<BlockPredicate>,
-    },
+    /// The block predicates.
+    CanPlaceOn(Vec<BlockPredicate>),
     /// List of blocks this item can break when in adventure mode.
-    CanBreak {
-        /// The block predicates.
-        block_predicates: Vec<BlockPredicate>,
-    },
+    /// The block predicates.
+    CanBreak(Vec<BlockPredicate>),
     /// The attribute modifiers of the item.
     AttributeModifiers {
         /// The attributes.
@@ -278,9 +257,7 @@ pub enum ItemComponent {
         show_in_tooltip: bool,
     },
     /// Value for the item predicate when using custom item models.
-    CustomModelData {
-        value: VarInt,
-    },
+    CustomModelData(VarInt),
     /// Allows you to hide all or parts of the item tooltip.
     TooltipDisplay {
         /// Whether to hide the tooltip entirely.
@@ -289,17 +266,13 @@ pub enum ItemComponent {
         hidden_components: Vec<VarInt>,
     },
     /// Accumulated anvil usage cost.
-    RepairCost {
-        cost: VarInt,
-    },
+    RepairCost(VarInt),
     /// Marks the item as non-interactive on the creative inventory (the first 5
     /// rows of items).
     /// TODO: when we send this to the client it crashes !?
     CreativeSlotLock,
     /// Overrides the item glint resulted from enchantments.
-    EnchantmentGlintOverride {
-        has_glint: bool,
-    },
+    EnchantmentGlintOverride(bool),
     /// Marks the projectile as intangible (cannot be picked-up).
     /// needs to be encoded with a empty compound tag.
     IntangibleProjectile,
@@ -323,7 +296,7 @@ pub enum ItemComponent {
         /// Whether the item has consume particles.
         has_consume_particles: bool,
         /// The effects.
-        effects: Vec<ConsumeEffect>
+        effects: Vec<ConsumeEffect>,
     },
     /// This specifies the item produced after using the current item.
     UseRemainder {
@@ -620,10 +593,7 @@ pub enum ItemComponent {
     },
     /// Sound played by a note block when this player's head is placed on top of
     /// it.
-    NoteBlockSound {
-        /// The sound.
-        sound: String,
-    },
+    NoteBlockSound(String),
     /// Patterns of a banner or banner applied to a shield.
     BannerPatterns {
         /// Number of elements in the following array.
@@ -632,10 +602,8 @@ pub enum ItemComponent {
         layers: Vec<(VarInt, Option<String>, Option<String>, VarInt)>,
     },
     /// Base color of the banner applied to a shield.
-    BaseColor {
-        /// The color.
-        color: VarInt,
-    },
+    /// The color.
+    BaseColor(DyeColor),
     /// Decorations on the four sides of a pot.
     PotDecorations {
         /// The number of elements in the following array.
@@ -666,22 +634,16 @@ pub enum ItemComponent {
         bees: Vec<(Compound, VarInt, VarInt)>,
     },
     /// Name of the necessary key to open this container.
-    Lock {
-        /// Always a String Tag.
-        key: String,
-    },
+    /// Always a String Tag.
+    Lock(String),
     /// Loot table for an unopened container.
-    ContainerLoot {
-        /// Always a Compound Tag.
-        data: Compound,
-    },
+    /// Always a Compound Tag.
+    ContainerLoot(Compound),
     /// Changes the sound that plays when the item breaks.
-    BreakSound {
-        sound_event: SoundId,
-    },
+    BreakSound(SoundId),
     /// The biome variant of a villager.
     /// An ID in the `minecraft:villager_type` registry.
-    VillagerVariant (VillagerType),
+    VillagerVariant(VillagerType),
     /// The variant of a wolf.
     /// An ID in the `minecraft:wolf_variant` registry.
     WolfVariant(WolfVariant),
@@ -769,7 +731,11 @@ pub enum ItemComponent {
 
 impl ItemComponent {
     pub fn hash(&self) -> i32 {
-        0
+         match self { 
+             ItemComponent::Unbreakable => HashOps::empty(),
+             _ => HashOps::hash(self)
+         }
+        
     }
 
     // Create a [`ItemComponent`] from a
