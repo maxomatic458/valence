@@ -1,11 +1,11 @@
 use base64::prelude::*;
 use serde::{Deserialize, Serialize};
 use url::Url;
-
+use valence_protocol_macros::HashOps;
 use crate::{Decode, Encode};
 
 /// A property from the game profile.
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Encode, Decode)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Encode, Decode, HashOps)]
 pub struct Property<S = String> {
     pub name: S,
     pub value: S,

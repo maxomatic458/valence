@@ -1,5 +1,6 @@
 package rs.valence.extractor;
 
+import com.google.common.hash.HashCode;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import java.io.FileWriter;
@@ -8,14 +9,28 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.JavaOps;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ItemEnchantmentsComponent;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.Enchantments;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.DynamicRegistryManager;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryOps;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.dynamic.HashCodeOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rs.valence.extractor.extractors.*;
 import sun.reflect.ReflectionFactory;
 
-public class Main implements ModInitializer {
+public class Main implements ModInitializer, ServerLifecycleEvents.ServerStarted {
 
     public static final String MOD_ID = "valence_extractor";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);

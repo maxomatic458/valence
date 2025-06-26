@@ -1,12 +1,13 @@
 use std::hash::Hasher;
 use crate::hash_utils::{HashOps, HashOpsHashable};
 use crate::sound::{SoundDirect, SoundId};
-use crate::{Decode, Encode, IDSet, VarInt};
+use crate::{Decode, Encode, GlobalPos, IDSet, VarInt};
 use std::io::Write;
 use valence_generated::attributes::{EntityAttribute, EntityAttributeOperation};
 use valence_generated::registry_id::RegistryId;
 use valence_ident::Ident;
 use valence_nbt::Compound;
+use valence_protocol::profile::Property;
 use valence_protocol_macros::HashOps;
 use valence_text::color::RgbColor;
 use valence_text::Text;
@@ -33,6 +34,24 @@ impl Rarity {
             "epic" => Some(Rarity::Epic),
             _ => None,
         }
+    }
+    
+    pub fn to_str(&self) -> &'static str {
+        match self {
+            Rarity::Common => "common",
+            Rarity::Uncommon => "uncommon",
+            Rarity::Rare => "rare",
+            Rarity::Epic =>  "epic"
+        }
+    }
+}
+
+impl HashOpsHashable for Rarity {
+    fn hash<T>(&self, hasher: &mut T)
+    where
+        T: Hasher + Sized
+    {
+        HashOpsHashable::hash(&self.to_str(), hasher);
     }
 }
 
@@ -89,12 +108,12 @@ pub struct DamageReduction {
 #[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub struct BlockPredicate {
     pub blocks: Option<IDSet>,
-    pub properties: Option<Vec<Property>>,
+    pub properties: Option<Vec<BlockPredicateProperty>>,
     pub nbt: Option<Compound>,
 }
 
 #[derive(Clone, PartialEq, Debug, HashOps)]
-pub struct Property {
+pub struct BlockPredicateProperty {
     pub name: String,
     pub is_exact_match: bool,
     pub exact_value: Option<String>,
@@ -102,7 +121,7 @@ pub struct Property {
     pub max_value: Option<String>,
 }
 
-impl Encode for Property {
+impl Encode for BlockPredicateProperty {
     fn encode(&self, mut w: impl Write) -> anyhow::Result<()> {
         self.name.encode(&mut w)?;
         self.is_exact_match.encode(&mut w)?;
@@ -119,7 +138,7 @@ impl Encode for Property {
     }
 }
 
-impl<'a> Decode<'a> for Property {
+impl<'a> Decode<'a> for BlockPredicateProperty {
     fn decode(r: &mut &'a [u8]) -> anyhow::Result<Self> {
         let name = String::decode(r)?;
         let is_exact_match = bool::decode(r)?;
@@ -138,7 +157,7 @@ impl<'a> Decode<'a> for Property {
         } else {
             None
         };
-        Ok(Property {
+        Ok(BlockPredicateProperty {
             name,
             is_exact_match,
             exact_value,
@@ -212,6 +231,63 @@ pub struct ToolRule {
 }
 
 #[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
+#[allow(private_bounds)]
+pub struct RawFilteredPair<V>
+where
+    V: Clone + PartialEq + Encode + HashOpsHashable
+{
+    pub raw: V,
+    pub filtered: Option<V>
+}
+
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
+pub enum FireworkShape {
+    SmallBall,
+    LargeBall,
+    STAR,
+    CREEPER,
+    BURST,
+}
+
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
+pub struct FireworkExplosion {
+    pub shape: FireworkShape,
+    pub colors: Vec<VarInt>,
+    pub fade_colors: Vec<VarInt>,
+    pub has_trail: bool,
+    pub has_twinkle: bool,
+
+}
+
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
+struct GameProfile {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub properties: Vec<Property>,
+
+}
+
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
+pub struct BannerLayer {
+    pub pattern: RegistryId,
+    pub color: DyeColor,
+}
+
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
+pub struct BeeData {
+    pub entity_data: Compound,
+    pub tick_in_hive: VarInt,
+    pub min_ticks_in_hive: VarInt,
+}
+
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
+pub struct StewEffect {
+    pub effect: RegistryId,
+    pub duration: u32,
+    
+}
+
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub enum ItemComponent {
     /// Customizable data that doesn't fit any specific component.
     /// Always a Compound Tag.
@@ -242,7 +318,7 @@ pub enum ItemComponent {
     /// The enchantments of the item.
     /// The enchantments. (The ID of the enchantment in the enchantment
     /// registry, The level of the enchantment)
-    Enchantments(Vec<(VarInt, VarInt)>),
+    Enchantments(Vec<(StrIdent, VarInt)>),
     /// List of blocks this block can be placed on when in adventure mode.
     /// The block predicates.
     CanPlaceOn(Vec<BlockPredicate>),
@@ -302,7 +378,7 @@ pub enum ItemComponent {
     UseRemainder {
         /// The remainder item.
         /// TODO: Fix
-        remainder: u8,
+        remainder: i8,
     },
     /// Cooldown to apply on use of the item.
     UseCooldown {
@@ -423,7 +499,7 @@ pub enum ItemComponent {
     ChargedProjectiles {
         /// The projectiles.
         // FIX: projectiles: Vec<ItemStack>,
-        projectiles: u8,
+        projectiles: i32,
     },
     /// Contents of a bundle.
     BundleContents {
@@ -447,18 +523,11 @@ pub enum ItemComponent {
         effects_multiplier: f32,
     },
     /// Effects granted by a suspicious stew.
-    SuspiciousStewEffects {
-        /// Number of elements in the following array.
-        number_of_effects: VarInt,
-        /// The effects.
-        effects: Vec<(VarInt, VarInt)>,
-    },
+    SuspiciousStewEffects(Vec<StewEffect>),
     /// Content of a writable book.
     WritableBookContent {
-        /// Number of elements in the following array.
-        number_of_pages: VarInt,
         /// The pages.
-        pages: Vec<(String, bool, Option<String>)>,
+        pages: Vec<RawFilteredPair<String>>,
     },
     /// Content of a written and signed book.
     WrittenBookContent {
@@ -476,7 +545,7 @@ pub enum ItemComponent {
         /// Number of elements in the following array.
         number_of_pages: VarInt,
         /// The pages.
-        pages: Vec<(String, bool, Option<String>)>,
+        pages: Vec<RawFilteredPair<String>>,
         /// Whether entity selectors have already been resolved.
         resolved: bool,
     },
@@ -549,57 +618,32 @@ pub enum ItemComponent {
     },
     /// The lodestone this compass points to.
     LodestoneTracker {
-        /// Whether this lodestone points to a position, otherwise it spins
-        /// randomly.
-        has_global_position: bool,
-        /// The dimension the compass points to. Only present if Has Global
-        /// Position is true.
-        dimension: Option<String>,
+
         /// The position the compass points to. Only present if Has Global
         /// Position is true.
-        position: Option<(VarInt, VarInt, VarInt)>,
+        target: Option<GlobalPos>,
         /// Whether the component is removed when the associated lodestone is
         /// broken.
         tracked: bool,
     },
     /// Properties of a firework star.
-    FireworkExplosion {
-        /// See Firework Explosion.
-        explosion: (VarInt, VarInt, Vec<VarInt>, VarInt, Vec<VarInt>, bool, bool),
-    },
+    FireworkExplosion(FireworkExplosion),
     /// Properties of a firework.
     Fireworks {
         /// The flight duration.
         flight_duration: VarInt,
-        /// Number of elements in the following array.
-        number_of_explosions: VarInt,
         /// The explosions.
-        explosions: Vec<(VarInt, VarInt, Vec<VarInt>, VarInt, Vec<VarInt>, bool, bool)>,
+        explosions: Vec<FireworkExplosion>,
     },
     /// Game Profile of a player's head.
-    Profile {
-        /// Whether the profile has a name.
-        has_name: bool,
-        /// The name of the profile. Only present if Has Name is true.
-        name: Option<String>,
-        /// Whether the profile has a unique ID.
-        has_unique_id: bool,
-        /// The unique ID of the profile. Only present if Has Unique ID is true.
-        unique_id: Option<uuid::Uuid>,
-        /// Number of elements in the following array.
-        number_of_properties: VarInt,
-        /// The properties.
-        properties: Vec<(String, String, bool, Option<String>)>,
-    },
+    Profile(GameProfile),
     /// Sound played by a note block when this player's head is placed on top of
     /// it.
     NoteBlockSound(String),
     /// Patterns of a banner or banner applied to a shield.
     BannerPatterns {
-        /// Number of elements in the following array.
-        number_of_layers: VarInt,
         /// The layers.
-        layers: Vec<(VarInt, Option<String>, Option<String>, VarInt)>,
+        layers: Vec<BannerLayer>,
     },
     /// Base color of the banner applied to a shield.
     /// The color.
@@ -616,22 +660,18 @@ pub enum ItemComponent {
         /// The number of elements in the following array.
         number_of_items: VarInt,
         /// The items.
-        // FIX: items: Vec<ItemStack>,
-        items: u8,
+        // TODO: FIX: items: Vec<ItemStack>,
+        items: i8,
     },
     /// State of a block.
     BlockState {
-        /// Number of elements in the following array.
-        number_of_properties: VarInt,
         /// The properties.
         properties: Vec<(String, String)>,
     },
     /// Bees inside a hive.
     Bees {
-        /// Number of elements in the following array.
-        number_of_bees: VarInt,
         /// The bees.
-        bees: Vec<(Compound, VarInt, VarInt)>,
+        bees: Vec<VarInt>,
     },
     /// Name of the necessary key to open this container.
     /// Always a String Tag.
@@ -731,11 +771,11 @@ pub enum ItemComponent {
 
 impl ItemComponent {
     pub fn hash(&self) -> i32 {
-         match self { 
+         match self {
              ItemComponent::Unbreakable => HashOps::empty(),
              _ => HashOps::hash(self)
          }
-        
+
     }
 
     // Create a [`ItemComponent`] from a

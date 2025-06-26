@@ -1,12 +1,17 @@
 use std::collections::HashSet;
-use crate::{IDSet, VarInt};
+use std::fmt::Debug;
+use crate::{Encode, IDSet, VarInt};
 use crc32c::Crc32cHasher;
 use std::hash::Hasher;
-use valence_generated::attributes::EntityAttribute;
+use valence_generated::attributes::{EntityAttribute, EntityAttributeOperation};
 use valence_generated::registry_id::RegistryId;
 use valence_ident::Ident;
+use valence_nbt::Compound;
+use valence_text::color::RgbColor;
 use valence_text::Text;
-use crate::item_component::Property;
+use crate::id_or::IdOr;
+use crate::item_component::{ConsumeEffect, DamageReduction, FireworkExplosion, ItemAttribute, PotionEffect, BlockPredicateProperty, RawFilteredPair, ToolRule, BannerLayer, BlockPredicate, StewEffect};
+use crate::profile::Property;
 
 /// Hash a value using CRC32C as defined in minecraft's `HashOps.java` file.
 pub(crate) trait HashOpsHashable {
@@ -21,12 +26,100 @@ trait ToHashCode {
     fn to_hash_code(&self) -> HashCode;
 }
 
+impl ToHashCode for BlockPredicateProperty {
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
+impl ToHashCode for PotionEffect {
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
+impl ToHashCode for ItemAttribute {
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
+impl ToHashCode for ConsumeEffect {
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
+impl ToHashCode for DamageReduction {
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
+impl ToHashCode for ToolRule {
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
+impl ToHashCode for BannerLayer {
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
+impl ToHashCode for FireworkExplosion {
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
 impl ToHashCode for Property {
     fn to_hash_code(&self) -> HashCode {
         HashCode(HashOps::hash(self))
     }
 }
 
+impl ToHashCode for Text {
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
+impl ToHashCode for BlockPredicate {
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
+impl ToHashCode for StewEffect {
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
+impl<T> ToHashCode for RawFilteredPair<T>
+where 
+    T: Clone + PartialEq + Encode + HashOpsHashable
+{
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
+/// Basic type for bool
+impl HashOpsHashable for bool {
+    fn hash<T>(&self, hasher: &mut T)
+    where
+        T: Hasher + Sized,
+    {
+        hasher.write_u8(13);
+        hasher.write_u8(if *self { 1 } else { 0 });
+    }
+}
+
+
+/// Basic type byte
 impl HashOpsHashable for i8 {
     fn hash<T>(&self, hasher: &mut T)
     where
@@ -37,6 +130,7 @@ impl HashOpsHashable for i8 {
     }
 }
 
+/// Basic type shirt
 impl HashOpsHashable for i16 {
     fn hash<T>(&self, hasher: &mut T)
     where
@@ -47,6 +141,7 @@ impl HashOpsHashable for i16 {
     }
 }
 
+/// Basic type int
 impl HashOpsHashable for i32 {
     fn hash<T>(&self, hasher: &mut T)
     where
@@ -57,15 +152,7 @@ impl HashOpsHashable for i32 {
     }
 }
 
-impl HashOpsHashable for u32 {
-    fn hash<T>(&self, hasher: &mut T)
-    where
-        T: Hasher + Sized
-    {
-        HashOpsHashable::hash(&(*self as i32), hasher);
-    }
-}
-
+/// Basic type long
 impl HashOpsHashable for i64 {
     fn hash<T>(&self, hasher: &mut T)
     where
@@ -76,6 +163,7 @@ impl HashOpsHashable for i64 {
     }
 }
 
+/// Basic type floats
 impl HashOpsHashable for f32 {
     fn hash<T>(&self, hasher: &mut T)
     where
@@ -86,6 +174,7 @@ impl HashOpsHashable for f32 {
     }
 }
 
+/// Basic type doubles
 impl HashOpsHashable for f64 {
     fn hash<T>(&self, hasher: &mut T)
     where
@@ -96,6 +185,7 @@ impl HashOpsHashable for f64 {
     }
 }
 
+/// Basic type string
 impl HashOpsHashable for &str {
     fn hash<T>(&self, hasher: &mut T)
     where
@@ -110,25 +200,8 @@ impl HashOpsHashable for &str {
         }
     }
 }
-impl HashOpsHashable for String {
-    fn hash<T>(&self, hasher: &mut T)
-    where
-        T: Hasher + Sized,
-    {
-        self.as_str().hash(hasher);
-    }
-}
 
-impl HashOpsHashable for bool {
-    fn hash<T>(&self, hasher: &mut T)
-    where
-        T: Hasher + Sized,
-    {
-        hasher.write_u8(13);
-        hasher.write_u8(if *self { 1 } else { 0 });
-    }
-}
-
+/// Basic type for raw bytes
 impl HashOpsHashable for Vec<u8> {
     fn hash<T>(&self, hasher: &mut T)
     where
@@ -142,6 +215,7 @@ impl HashOpsHashable for Vec<u8> {
     }
 }
 
+/// Basic type for list of ints
 impl HashOpsHashable for Vec<i32> {
     fn hash<T>(&self, hasher: &mut T)
     where
@@ -155,6 +229,7 @@ impl HashOpsHashable for Vec<i32> {
     }
 }
 
+/// Basic type for long lists
 impl HashOpsHashable for Vec<i64> {
     fn hash<T>(&self, hasher: &mut T)
     where
@@ -167,6 +242,33 @@ impl HashOpsHashable for Vec<i64> {
         hasher.write_u8(19);
     }
 }
+
+/// Basic type of field maps also used for hashing structs
+///
+/// Structs need to be hashed as:
+/// Vec<(value, field_name)>
+/// 
+/// As for maps:
+/// Vec<(key, value)>
+impl<A, B> HashOpsHashable for Vec<(A , B)>
+where 
+    A: HashOpsHashable,
+    B: HashOpsHashable
+{
+    fn hash<T>(&self, hasher: &mut T)
+    where
+        T: Hasher + Sized
+    {
+        hasher.write_u8(2);
+        for (a, b) in self {
+            hasher.write_i32(HashOps::hash(a));
+            hasher.write_i32(HashOps::hash(b));
+        }
+        hasher.write_u8(3);
+    }
+}
+
+/// Basic type for hashable lists
 impl< V> HashOpsHashable for Vec<V>
 where V: ToHashCode
 {
@@ -179,6 +281,24 @@ where V: ToHashCode
             hasher.write_i32(e.to_hash_code().0);
         }
         hasher.write_u8(5);
+    }
+}
+
+impl HashOpsHashable for u32 {
+    fn hash<T>(&self, hasher: &mut T)
+    where
+        T: Hasher + Sized
+    {
+        HashOpsHashable::hash(&(*self as i32), hasher);
+    }
+}
+
+impl HashOpsHashable for String {
+    fn hash<T>(&self, hasher: &mut T)
+    where
+        T: Hasher + Sized,
+    {
+        self.as_str().hash(hasher);
     }
 }
 
@@ -204,13 +324,24 @@ impl HashOpsHashable for IDSet {
 }
 
 impl HashOpsHashable for Vec<RegistryId> {
-    
+
     fn hash<T>(&self, hasher: &mut T)
     where
         T: Hasher + Sized
     {
         let ids = self.iter().map(|id| id.id()).collect::<Vec<i32>>();
         HashOpsHashable::hash(&ids, hasher);
+    }
+}
+
+impl HashOpsHashable for Vec<VarInt> {
+
+    fn hash<T>(&self, hasher: &mut T)
+    where
+        T: Hasher + Sized
+    {
+        let var_ints = self.iter().map(|var_int| var_int.0).collect::<Vec<i32>>();
+        HashOpsHashable::hash(&var_ints, hasher);
     }
 }
 
@@ -223,20 +354,36 @@ impl HashOpsHashable for RegistryId {
     }
 }
 
-impl<A, B> HashOpsHashable for Vec<(A , B)>
-where A: HashOpsHashable,
-      B: HashOpsHashable {
+impl HashOpsHashable for Compound {
+    fn hash<T>(&self, hasher: &mut T)
+    where
+        T: Hasher + Sized {
+        todo!()
+    }
+}
+
+impl HashOpsHashable for RgbColor {
+    fn hash<T>(&self, hasher: &mut T)
+    where
+        T: Hasher + Sized {
+        HashOpsHashable::hash(&self.into_bits(), hasher);
+    }
+}
+
+impl<E> HashOpsHashable for IdOr<E>
+where
+    E: HashOpsHashable + Encode + Clone + Debug + PartialEq
+{
     fn hash<T>(&self, hasher: &mut T)
     where
         T: Hasher + Sized
     {
-        hasher.write_u8(2);
-        for (a, b) in self {
-            hasher.write_i32(HashOps::hash(a));
-            hasher.write_i32(HashOps::hash(b));
+        match self {
+            IdOr::Id(id) => HashOpsHashable::hash(id, hasher),
+            IdOr::Inline(e) => HashOpsHashable::hash(e, hasher),
         }
-        hasher.write_u8(3);
     }
+    
 }
 
 impl <A> HashOpsHashable for Option<A>
@@ -284,6 +431,24 @@ impl HashOpsHashable for EntityAttribute {
     }
 }
 
+impl HashOpsHashable for EntityAttributeOperation {
+    fn hash<T>(&self, hasher: &mut T)
+    where
+        T: Hasher + Sized
+    {
+        HashOpsHashable::hash(&(self.to_raw() as i32), hasher);
+    }
+}
+
+impl HashOpsHashable for uuid::Uuid {
+    fn hash<T>(&self, hasher: &mut T)
+    where
+        T: Hasher + Sized
+    {
+        HashOpsHashable::hash(&self.to_bytes_le().to_vec(), hasher);
+    }
+}
+
 pub(crate) struct HashOps;
 
 impl HashOps {
@@ -302,6 +467,7 @@ impl HashOps {
     }
 }
 mod tests {
+    use valence_generated::registry_id::RegistryId;
     use valence_ident::ident;
 
     use crate::item_component::Rarity;
@@ -342,10 +508,10 @@ mod tests {
         assert_eq!(comp.hash(), expected_hash);
 
         let comp = ItemComponent::Enchantments(vec![
-            (VarInt(16), VarInt(1)), // Sharpness I
-            (VarInt(19), VarInt(2)), // Knockback II
+            (ident!("minecraft:knockback").into(), VarInt(2)), // Knockback II
+            (ident!("minecraft:sharpness").into(), VarInt(1)), // Sharpness I
         ]);
-        let expected_hash = 1508412171;
+        let expected_hash = -479181350;
         assert_eq!(comp.hash(), expected_hash);
 
         let comp = ItemComponent::TooltipDisplay {

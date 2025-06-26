@@ -13,7 +13,7 @@ pub(super) fn derive_hash_ops(item: TokenStream) -> Result<TokenStream> {
 
     add_trait_bounds(
         &mut input.generics,
-        quote!(::valence_protocol::hash_util::HashOpsHashable),
+        quote!(::valence_protocol::hash_utils::HashOpsHashable),
     );
 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
