@@ -42,7 +42,7 @@ pub(super) fn derive_hash_ops(item: TokenStream) -> Result<TokenStream> {
                      where
                          T: ::std::hash::Hasher + Sized,
                      {
-                        use ::valence_protocol::{hash_utils::{HashOpsHashable, HashOps}, Context};
+                        use ::valence_protocol::{hash_utils::{HashOpsHashable, HashOps, HashCode}, Context};
 
                         #encode_fields
                     }
@@ -55,7 +55,7 @@ pub(super) fn derive_hash_ops(item: TokenStream) -> Result<TokenStream> {
             let is_variant = variants
                 .iter()
                 .all(|(_, v)| matches!(v.fields, Fields::Unit));
-            
+
             let encode_arms = variants
                 .iter()
                 .map(|(disc, variant)| {
@@ -115,7 +115,7 @@ pub(super) fn derive_hash_ops(item: TokenStream) -> Result<TokenStream> {
                      where
                          T: ::std::hash::Hasher + Sized,
                      {
-                        use ::valence_protocol::{hash_utils::{HashOpsHashable, HashOps}, VarInt, Context};
+                        use ::valence_protocol::{hash_utils::{HashOpsHashable, HashOps, HashCode}, VarInt, Context};
 
                         match self {
                             #encode_arms
@@ -134,7 +134,7 @@ pub(super) fn derive_hash_ops(item: TokenStream) -> Result<TokenStream> {
 
 fn process_named_fields(fields: &FieldsNamed, is_self: bool) -> (Vec<&Ident>, TokenStream) {
     let names = fields.named.iter().map(|f| f.ident.as_ref().unwrap()).collect::<Vec<_>>();
-    let fields: TokenStream = fields.named
+    let fields: Vec<TokenStream> = fields.named
         .iter()
         .map(| field| {
             let attr = parse_attribute(&field.attrs).unwrap();
@@ -145,13 +145,15 @@ fn process_named_fields(fields: &FieldsNamed, is_self: bool) -> (Vec<&Ident>, To
                 false => quote!(#name),
             };
             let hashed_field = quote! {
-                hasher.write(&HashOps::hash(&#raw_name).to_le_bytes());
-                hasher.write(&HashOps::hash(#name).to_le_bytes());
+                __data.push((
+                    HashCode::new(HashOps::hash(&#raw_name)),
+                    HashCode::new(HashOps::hash(#name))
+                ));
             };
-            match attr { 
+            match attr {
                 Some(attr) if attr.option.is_some()  => {
                     let expr = attr.option.as_ref().unwrap();
-                    quote! { 
+                    quote! {
                         if #name != &#expr {
                             #hashed_field
                         }
@@ -161,10 +163,12 @@ fn process_named_fields(fields: &FieldsNamed, is_self: bool) -> (Vec<&Ident>, To
             }
         })
         .collect();
+    let len = names.len();
     let tokens = quote! {
-        hasher.write_u8(2);
-        #fields
-        hasher.write_u8(3);
+        let mut __data: Vec<(HashCode, HashCode)> = Vec::with_capacity(#len);
+        #(#fields)*
+        __data.sort_by(HashCode::sort);
+        HashOpsHashable::hash(&__data, hasher);
     };
     (names, tokens)
 }
@@ -177,9 +181,9 @@ fn parse_attribute(attrs: &[Attribute]) -> Result<Option<HashOpsAttribute>> {
         if !attr.path().is_ident("hash_ops") {
             continue
         }
-    
+
         let mut res = HashOpsAttribute { option: None };
-    
+
         attr.parse_nested_meta(|meta| {
             if meta.path.is_ident("option") {
                 res.option = Some(meta.value()?.parse::<Expr>()?);
@@ -188,7 +192,7 @@ fn parse_attribute(attrs: &[Attribute]) -> Result<Option<HashOpsAttribute>> {
                 Err(meta.error("unrecognized hash_ops argument"))
             }
         })?;
-    
+
         return Ok(Some(res))
 
     }

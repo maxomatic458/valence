@@ -1,4 +1,3 @@
-use std::any::Any;
 use std::io::Write;
 use std::mem;
 pub use valence_generated::item::ItemKind;
@@ -59,7 +58,7 @@ impl HashedItemStack {
 }
 
 impl Encode for HashedItemStack {
-    fn encode(&self, w: impl Write) -> anyhow::Result<()> {
+    fn encode(&self, _: impl Write) -> anyhow::Result<()> {
         // if self.is_empty() {
         //     false.encode(&mut w)
         // } else {

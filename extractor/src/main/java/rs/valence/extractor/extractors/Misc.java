@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import java.lang.reflect.Modifier;
 import java.util.Iterator;
 import java.util.Locale;
+
 import net.minecraft.component.ComponentType;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityStatuses;
@@ -17,6 +18,7 @@ import net.minecraft.registry.*;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.dynamic.HashCodeOps;
 import net.minecraft.util.math.Direction;
 import rs.valence.extractor.Main;
 
@@ -297,6 +299,8 @@ public class Misc implements Main.Extractor {
             componentTypeJson.addProperty(type.toString(), id);
         }
         miscJson.add("component_data_type", componentTypeJson);
+
+        var hashOps = RegistryOps.of(HashCodeOps.INSTANCE, registryManager);
 
         return miscJson;
     }

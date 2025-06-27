@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt::Debug;
 use crate::{Encode, IDSet, VarInt};
 use crc32c::Crc32cHasher;
@@ -19,7 +20,26 @@ pub(crate) trait HashOpsHashable: Debug {
         T: Hasher + Sized;
 }
 
-struct HashCode(i32);
+#[derive(Clone, PartialEq, Eq, Debug)]
+#[repr(transparent)]
+pub(crate) struct HashCode(i32);
+impl HashCode {
+    pub(crate) fn new(code: i32) -> HashCode { HashCode(code) }
+
+    pub(crate) fn sort(pair_a: &(HashCode, HashCode), pair_b: &(HashCode, HashCode)) -> Ordering {
+        let (a1, a2) = pair_a;
+        let (b1, b2) = pair_b;
+        
+        Self::unsafe_cast(a1.0).cmp(&Self::unsafe_cast(b1.0)).then_with(|| 
+            Self::unsafe_cast(a2.0).cmp(&Self::unsafe_cast(b2.0)))
+    }
+    
+    /// MNS pads i32 with zeros to a long before it compares it.
+    #[inline(always)]
+    fn unsafe_cast(val: i32) -> i64 {
+        (val as u32) as i64
+    }
+}
 
 trait ToHashCode: Debug {
     fn to_hash_code(&self) -> HashCode;
@@ -267,10 +287,27 @@ where
     where
         T: Hasher + Sized
     {
+        let mut data: Vec<(HashCode, HashCode)> = self.iter().map(|(a, b)|
+            (HashCode(HashOps::hash(a)), HashCode(HashOps::hash(b))))
+            .collect();
+        data.sort_by(HashCode::sort);
+        HashOpsHashable::hash(&data, hasher);
+    }
+}
+
+
+impl HashOpsHashable for Vec<(HashCode , HashCode)>
+{
+    fn hash<T>(&self, hasher: &mut T)
+    where
+        T: Hasher + Sized
+    {
         hasher.write_u8(2);
+
         for (a, b) in self {
-            hasher.write(&HashOps::hash(a).to_le_bytes());
-            hasher.write(&HashOps::hash(b).to_le_bytes());
+            println!("{} {}", a.0, b.0);
+            hasher.write(&a.0.to_le_bytes());
+            hasher.write(&b.0.to_le_bytes());
         }
         hasher.write_u8(3);
     }
@@ -286,7 +323,7 @@ where V: ToHashCode
     {
         hasher.write_u8(4);
         for e in self {
-            hasher.write_i32(e.to_hash_code().0);
+            hasher.write_u32(e.to_hash_code().0 as u32);
         }
         hasher.write_u8(5);
     }
@@ -363,7 +400,7 @@ impl HashOpsHashable for RegistryId {
 }
 
 impl HashOpsHashable for Compound {
-    fn hash<T>(&self, hasher: &mut T)
+    fn hash<T>(&self, _: &mut T)
     where
         T: Hasher + Sized {
         todo!()
@@ -466,17 +503,16 @@ impl HashOps {
     {
         let mut hasher = Crc32cHasher::default();
         data.hash(&mut hasher);
-        let code = hasher.finish() as i32;
-        code
+        hasher.finish() as i32
     }
 }
 
 mod tests {
     use super::*;
-    
+
     use crate::item_component::{Food, ItemComponent, Rarity};
     use valence_ident::ident;
-    
+
     #[test]
     fn test_item_component_hashing() {
         let comp = ItemComponent::MaxStackSize(VarInt(10));
@@ -537,6 +573,7 @@ mod tests {
         let expected_hash = 828198337;
         assert_eq!(comp.hash(), expected_hash);
 
+        println!("break");
         let comp = ItemComponent::Food(Food {
             nutrition: VarInt(3),
             saturation: 10.5,
@@ -544,5 +581,30 @@ mod tests {
         });
         let expected_hash = 1668104010;
         assert_eq!(comp.hash(), expected_hash);
+    }
+
+
+
+    #[test]
+    fn test_item_component_hashing2() {
+        let mut hasher = Crc32cHasher::default();
+        hasher.write_i8(2);
+
+        // 2
+        hasher.write_i32(632332345);
+        hasher.write_i32(-1019818302);
+
+        // 0
+        hasher.write_i32(-1933181283);
+        hasher.write_i32(-499649379);
+
+        // 1
+        hasher.write_i32(-481751991);
+        hasher.write_i32(-1581769479);
+
+        hasher.write_i8(3);
+
+        println!("{}", hasher.finish() as i32)
+
     }
 }

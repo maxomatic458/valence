@@ -260,7 +260,7 @@ pub struct FireworkExplosion {
 }
 
 #[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
-struct GameProfile {
+pub struct GameProfile {
     pub id: uuid::Uuid,
     pub name: String,
     pub properties: Vec<Property>,
@@ -310,7 +310,6 @@ pub struct Equippable {
 
 #[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
 pub struct Food {
-
     /// Non-negative.
     pub nutrition: VarInt,
     /// How much saturation will be given after consuming the item.
