@@ -35,7 +35,7 @@ impl Rarity {
             _ => None,
         }
     }
-    
+
     pub fn to_str(&self) -> &'static str {
         match self {
             Rarity::Common => "common",
@@ -284,7 +284,40 @@ pub struct BeeData {
 pub struct StewEffect {
     pub effect: RegistryId,
     pub duration: u32,
-    
+
+}
+
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
+pub struct Equippable {
+    /// The slot type.
+    pub slot: EquipSlot,
+    /// The equip sound event.
+    pub equip_sound: SoundId,
+    /// The model identifier.
+    pub model: Option<StrIdent>,
+    /// The camera overlay identifier.
+    pub camera_overlay: Option<StrIdent>,
+    /// Whether the item has allowed entities.
+    /// The allowed entities.
+    pub allowed_entities: Option<IDSet>,
+    /// Whether the item is dispensable.
+    pub dispensable: bool,
+    /// Whether the item is swappable.
+    pub swappable: bool,
+    /// Whether the item takes damage on hurt.
+    pub damage_on_hurt: bool,
+}
+
+#[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
+pub struct Food {
+
+    /// Non-negative.
+    pub nutrition: VarInt,
+    /// How much saturation will be given after consuming the item.
+    pub saturation: f32,
+    /// Whether the item can always be eaten, even at full hunger.
+    #[hash_ops(option=false)]
+    pub can_always_eat: bool,
 }
 
 #[derive(Clone, PartialEq, Debug, Encode, Decode, HashOps)]
@@ -337,9 +370,10 @@ pub enum ItemComponent {
     /// Allows you to hide all or parts of the item tooltip.
     TooltipDisplay {
         /// Whether to hide the tooltip entirely.
+        #[hash_ops(option=false)]
         hide_tooltip: bool,
         // The IDs of data components in the minecraft:data_component_type registry to hide.
-        hidden_components: Vec<VarInt>,
+        hidden_components: Vec<StrIdent>,
     },
     /// Accumulated anvil usage cost.
     RepairCost(VarInt),
@@ -353,14 +387,7 @@ pub enum ItemComponent {
     /// needs to be encoded with a empty compound tag.
     IntangibleProjectile,
     /// Makes the item restore players hunger when eaten.
-    Food {
-        /// Non-negative.
-        nutrition: VarInt,
-        /// How much saturation will be given after consuming the item.
-        saturation_modifier: f32,
-        /// Whether the item can always be eaten, even at full hunger.
-        can_always_eat: bool,
-    },
+    Food(Food),
     /// Makes the item consumable.
     Consumable {
         /// How long it takes to consume the item.
@@ -414,25 +441,7 @@ pub enum ItemComponent {
         value: VarInt,
     },
     /// Allows the item to be equipped by the player.
-    Equippable {
-        /// The slot type.
-        slot: EquipSlot,
-        /// The equip sound event.
-        equip_sound: SoundId,
-        /// The model identifier.
-        model: Option<StrIdent>,
-        /// The camera overlay identifier.
-        camera_overlay: Option<StrIdent>,
-        /// Whether the item has allowed entities.
-        /// The allowed entities.
-        allowed_entities: Option<IDSet>,
-        /// Whether the item is dispensable.
-        dispensable: bool,
-        /// Whether the item is swappable.
-        swappable: bool,
-        /// Whether the item takes damage on hurt.
-        damage_on_hurt: bool,
-    },
+    Equippable(Equippable),
     /// Items that can be combined with this item in an anvil to repair it.
     Repairable {
         /// The items.
@@ -771,11 +780,7 @@ pub enum ItemComponent {
 
 impl ItemComponent {
     pub fn hash(&self) -> i32 {
-         match self {
-             ItemComponent::Unbreakable => HashOps::empty(),
-             _ => HashOps::hash(self)
-         }
-
+        HashOps::hash(self)
     }
 
     // Create a [`ItemComponent`] from a

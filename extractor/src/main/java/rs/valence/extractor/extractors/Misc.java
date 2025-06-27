@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 import java.lang.reflect.Modifier;
 import java.util.Iterator;
 import java.util.Locale;
-
 import net.minecraft.component.ComponentType;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityStatuses;

@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::fmt::Debug;
 use crate::{Encode, IDSet, VarInt};
 use crc32c::Crc32cHasher;
@@ -14,7 +13,7 @@ use crate::item_component::{ConsumeEffect, DamageReduction, FireworkExplosion, I
 use crate::profile::Property;
 
 /// Hash a value using CRC32C as defined in minecraft's `HashOps.java` file.
-pub(crate) trait HashOpsHashable {
+pub(crate) trait HashOpsHashable: Debug {
     fn hash<T>(&self, hasher: &mut T)
     where
         T: Hasher + Sized;
@@ -22,7 +21,7 @@ pub(crate) trait HashOpsHashable {
 
 struct HashCode(i32);
 
-trait ToHashCode {
+trait ToHashCode: Debug {
     fn to_hash_code(&self) -> HashCode;
 }
 
@@ -98,8 +97,17 @@ impl ToHashCode for StewEffect {
     }
 }
 
+impl<S> ToHashCode for Ident<S>
+where
+    S: HashOpsHashable
+{
+    fn to_hash_code(&self) -> HashCode {
+        HashCode(HashOps::hash(self))
+    }
+}
+
 impl<T> ToHashCode for RawFilteredPair<T>
-where 
+where
     T: Clone + PartialEq + Encode + HashOpsHashable
 {
     fn to_hash_code(&self) -> HashCode {
@@ -247,11 +255,11 @@ impl HashOpsHashable for Vec<i64> {
 ///
 /// Structs need to be hashed as:
 /// Vec<(value, field_name)>
-/// 
+///
 /// As for maps:
 /// Vec<(key, value)>
 impl<A, B> HashOpsHashable for Vec<(A , B)>
-where 
+where
     A: HashOpsHashable,
     B: HashOpsHashable
 {
@@ -261,8 +269,8 @@ where
     {
         hasher.write_u8(2);
         for (a, b) in self {
-            hasher.write_i32(HashOps::hash(a));
-            hasher.write_i32(HashOps::hash(b));
+            hasher.write(&HashOps::hash(a).to_le_bytes());
+            hasher.write(&HashOps::hash(b).to_le_bytes());
         }
         hasher.write_u8(3);
     }
@@ -383,7 +391,7 @@ where
             IdOr::Inline(e) => HashOpsHashable::hash(e, hasher),
         }
     }
-    
+
 }
 
 impl <A> HashOpsHashable for Option<A>
@@ -452,27 +460,23 @@ impl HashOpsHashable for uuid::Uuid {
 pub(crate) struct HashOps;
 
 impl HashOps {
-    pub fn hash<T>(data: &T) -> i32
+    pub(crate) fn hash<T>(data: &T) -> i32
     where
-        T: HashOpsHashable {
+        T: HashOpsHashable
+    {
         let mut hasher = Crc32cHasher::default();
         data.hash(&mut hasher);
-        hasher.finish() as i32
-    }
-
-    pub fn empty() -> i32 {
-        let mut encoder = Crc32cHasher::default();
-        encoder.write(&[2, 3]);
-        encoder.finish() as i32
+        let code = hasher.finish() as i32;
+        code
     }
 }
+
 mod tests {
-    use valence_generated::registry_id::RegistryId;
+    use super::*;
+    
+    use crate::item_component::{Food, ItemComponent, Rarity};
     use valence_ident::ident;
-
-    use crate::item_component::Rarity;
-    use crate::{item_component::ItemComponent, VarInt};
-
+    
     #[test]
     fn test_item_component_hashing() {
         let comp = ItemComponent::MaxStackSize(VarInt(10));
@@ -514,12 +518,16 @@ mod tests {
         let expected_hash = -479181350;
         assert_eq!(comp.hash(), expected_hash);
 
-        let comp = ItemComponent::TooltipDisplay {
+        let comp2 = ItemComponent::TooltipDisplay {
             hide_tooltip: false,
-            hidden_components: vec![VarInt(12), VarInt(13)],
+            // Component types: CanBreak, AttributeModifiers
+            hidden_components: vec![
+                ident!("minecraft:can_break").into(),
+                ident!("minecraft:attribute_modifiers").into()],
         };
         let expected_hash = 1684687611;
-        assert_eq!(comp.hash(), expected_hash);
+        let actual = comp2.hash();
+        assert_eq!(actual, expected_hash);
 
         let comp = ItemComponent::RepairCost(VarInt(5));
         let expected_hash = 645064431;
@@ -529,11 +537,11 @@ mod tests {
         let expected_hash = 828198337;
         assert_eq!(comp.hash(), expected_hash);
 
-        let comp = ItemComponent::Food {
+        let comp = ItemComponent::Food(Food {
             nutrition: VarInt(3),
-            saturation_modifier: 10.5,
+            saturation: 10.5,
             can_always_eat: true,
-        };
+        });
         let expected_hash = 1668104010;
         assert_eq!(comp.hash(), expected_hash);
     }
