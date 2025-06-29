@@ -421,6 +421,26 @@ impl Text {
             TextContent::StorageNbt { nbt, .. } => nbt.is_empty(),
         }
     }
+    
+    pub fn as_plain(&self) -> Option<String> {
+        if self.color.is_some() || self.font.is_some() || self.bold.is_some() || 
+            self.italic.is_some() || self.underlined.is_some() || self.strikethrough.is_some() ||
+            self.obfuscated.is_some() || self.insertion.is_some() || self.click_event.is_some() ||
+            self.hover_event.is_some() {
+            return None;
+        }
+    
+        for extra in &self.0.extra {
+            if !extra.is_empty() {
+                return None;
+            }
+        }
+        
+        match &self.content {
+            TextContent::Text { text } => Some(text.to_string()),
+            _ => None,
+        }
+    }
 
     /// Converts the [`Text`] object to a plain string with the [legacy formatting (`§` and format codes)](https://wiki.vg/Chat#Old_system)
     ///
