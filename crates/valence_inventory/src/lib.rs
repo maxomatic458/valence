@@ -113,6 +113,9 @@ impl Inventory {
     /// inv.set_slot(0, ItemStack::new(ItemKind::Diamond, 1));
     /// assert_eq!(inv.slot(0).item, ItemKind::Diamond);
     /// ```
+    /// 
+    /// # Panics
+    /// If the slot index is out of bounds.
     #[track_caller]
     #[inline]
     pub fn set_slot<I: Into<ItemStack>>(&mut self, idx: u16, item: I) {
@@ -132,6 +135,8 @@ impl Inventory {
     /// let old = inv.replace_slot(0, ItemStack::new(ItemKind::IronIngot, 1));
     /// assert_eq!(old.item, ItemKind::Diamond);
     /// ```
+    /// # Panics
+    /// If the slot index is out of bounds.
     #[track_caller]
     #[must_use]
     pub fn replace_slot<I: Into<ItemStack>>(&mut self, idx: u16, item: I) -> ItemStack {
@@ -159,6 +164,8 @@ impl Inventory {
     /// inv.swap_slot(0, 1);
     /// assert_eq!(inv.slot(1).item, ItemKind::Diamond);
     /// ```
+    /// # Panics
+    /// If either slot index is out of bounds.
     #[track_caller]
     pub fn swap_slot(&mut self, idx_a: u16, idx_b: u16) {
         assert!(
@@ -193,6 +200,8 @@ impl Inventory {
     /// inv.set_slot_amount(0, 64);
     /// assert_eq!(inv.slot(0).count, 64);
     /// ```
+    /// # Panics
+    /// If the slot index is out of bounds.
     #[track_caller]
     pub fn set_slot_amount(&mut self, idx: u16, amount: i8) {
         assert!(idx < self.slot_count(), "slot index out of range");
