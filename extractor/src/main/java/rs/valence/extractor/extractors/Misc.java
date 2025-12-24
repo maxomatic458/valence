@@ -3,7 +3,10 @@ package rs.valence.extractor.extractors;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.lang.reflect.Modifier;
+import java.util.Iterator;
 import java.util.Locale;
+
+import net.minecraft.component.ComponentType;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.data.TrackedDataHandler;
@@ -12,7 +15,10 @@ import net.minecraft.entity.passive.ArmadilloEntity;
 import net.minecraft.entity.passive.SnifferEntity;
 import net.minecraft.network.packet.s2c.play.EntityAnimationS2CPacket;
 import net.minecraft.registry.*;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.DyeColor;
+import net.minecraft.util.dynamic.HashCodeOps;
 import net.minecraft.util.math.Direction;
 import rs.valence.extractor.Main;
 
@@ -85,8 +91,8 @@ public class Misc implements Main.Extractor {
         var villagerProfessionJson = new JsonObject();
         for (var profession : Registries.VILLAGER_PROFESSION) {
             villagerProfessionJson.addProperty(
-                profession.id().getString().toLowerCase(),
-                Registries.VILLAGER_PROFESSION.getRawId(profession)
+                    profession.id().getString().toLowerCase(),
+                    Registries.VILLAGER_PROFESSION.getRawId(profession)
             );
         }
         miscJson.add("villager_profession", villagerProfessionJson);
@@ -276,6 +282,25 @@ public class Misc implements Main.Extractor {
             }
         }
         miscJson.add("tracked_data_handler", trackedDataHandlerJson);
+
+        var dyeColorJson = new JsonObject();
+        for (var color : DyeColor.values()) {
+            dyeColorJson.addProperty(color.getId().toLowerCase(Locale.ROOT), color.getIndex());
+        }
+        miscJson.add("dye_color", dyeColorJson);
+
+        var componentTypeJson = new JsonObject();
+        int id = 0;
+        for (Iterator<RegistryEntry.Reference<ComponentType<?>>> it = registryManager
+                .getOrThrow(RegistryKeys.DATA_COMPONENT_TYPE)
+                .streamEntries()
+                .toList().iterator(); it.hasNext(); id++) {
+            ComponentType<?> type = it.next().value();
+            componentTypeJson.addProperty(type.toString(), id);
+        }
+        miscJson.add("component_data_type", componentTypeJson);
+
+        var hashOps = RegistryOps.of(HashCodeOps.INSTANCE, registryManager);
 
         return miscJson;
     }

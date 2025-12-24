@@ -33,6 +33,7 @@ pub mod id_or;
 pub mod id_set;
 mod impls;
 pub mod item;
+pub mod item_component;
 pub mod movement_flags;
 pub mod packets;
 pub mod profile;

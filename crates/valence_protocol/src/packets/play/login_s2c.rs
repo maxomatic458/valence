@@ -24,7 +24,7 @@ pub struct LoginS2c<'a> {
     pub previous_game_mode: OptGameMode,
     pub is_debug: bool,
     pub is_flat: bool,
-    pub last_death_location: Option<GlobalPos<'a>>,
+    pub last_death_location: Option<GlobalPos>,
     pub portal_cooldown: VarInt,
     pub sea_level: VarInt,
     pub enforeces_secure_chat: bool,

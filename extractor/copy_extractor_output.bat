@@ -15,6 +15,8 @@ copy run\valence_extractor_output\items.json ..\crates\valence_generated\extract
 copy run\valence_extractor_output\packets.json ..\crates\valence_generated\extracted\
 copy run\valence_extractor_output\sounds.json ..\crates\valence_generated\extracted\
 copy run\valence_extractor_output\translation_keys.json ..\crates\valence_lang\extracted\
+copy run/valence_extractor_output/misc.json ..\crates\valence_protocol\extracted\
+copy run/valence_extractor_output/items.json ..\crates\valence_protocol\extracted\
 copy run\valence_extractor_output\registry_codec.json ..\crates\valence_registry\extracted\
 copy run\valence_extractor_output\tags.json ..\crates\valence_registry\extracted\
 copy run\valence_extractor_output\packets.json ..\tools\packet_inspector\extracted\

@@ -1,17 +1,10 @@
 use std::fmt::Debug;
 use std::io::Write;
-
-use valence_generated::attributes::{EntityAttribute, EntityAttributeOperation};
+use std::mem;
 pub use valence_generated::item::ItemKind;
-use valence_generated::registry_id::RegistryId;
 pub use valence_generated::sound::Sound;
-use valence_ident::Ident;
-use valence_nbt::Compound;
-use valence_text::color::RgbColor;
-use valence_text::Text;
-
-use crate::sound::{SoundDirect, SoundId};
-use crate::{Decode, Encode, IDSet, VarInt};
+use crate::{Decode, Encode, VarInt};
+use crate::item_component::ItemComponent;
 
 const NUM_ITEM_COMPONENTS: usize = 96;
 
@@ -678,13 +671,21 @@ impl HashedItemStack {
         components: [const { Patchable::None }; NUM_ITEM_COMPONENTS],
     };
 
+    pub fn new (item: ItemKind, count: i8) -> Self {
+        Self {
+            item,
+            count,
+            components: [const { Patchable::None }; NUM_ITEM_COMPONENTS],
+        }
+    }
+
     pub const fn is_empty(&self) -> bool {
         matches!(self.item, ItemKind::Air) || self.count <= 0
     }
 }
 
 impl Encode for HashedItemStack {
-    fn encode(&self, w: impl Write) -> anyhow::Result<()> {
+    fn encode(&self, _: impl Write) -> anyhow::Result<()> {
         // if self.is_empty() {
         //     false.encode(&mut w)
         // } else {
@@ -1051,9 +1052,12 @@ impl ItemStack {
         components: [const { Patchable::None }; NUM_ITEM_COMPONENTS],
     };
 
-    /// Creates a new item stack without any components.
+    /// Creates a new item stack with the vanilla default components for the
+    /// given [`ItemKind`].
     #[must_use]
-    pub const fn new(item: ItemKind, count: i8) -> Self {
+    pub fn new(item: ItemKind, count: i8) -> Self {
+        let components = item.default_components();
+
         Self {
             item,
             count,
@@ -1061,15 +1065,13 @@ impl ItemStack {
         }
     }
 
-    /// Creates a new item stack with the vanilla default components for the
-    /// given [`ItemKind`].
-    pub fn new_vanilla(item: ItemKind, count: i8) -> Self {
-        let components = item.default_components();
-
+    /// Creates a new item stack without any components, please note that the client still
+    /// has the default components, but in this case, the server is not aware of them
+    pub const  fn with_empty_components(item: ItemKind, count: i8) -> Self {
         Self {
             item,
             count,
-            components,
+            components: [const { Patchable::None }; NUM_ITEM_COMPONENTS],
         }
     }
 
