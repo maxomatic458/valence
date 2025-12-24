@@ -320,6 +320,7 @@ impl Client {
         &mut self,
         particle: &Particle,
         long_distance: bool,
+        always_visible: bool,
         position: P,
         offset: O,
         max_speed: f32,
@@ -329,8 +330,9 @@ impl Client {
         O: Into<Vec3>,
     {
         self.write_packet(&LevelParticlesS2c {
-            particle: particle.clone(),
             long_distance,
+            always_visible,
+            particle: particle.clone(),
             position: position.into(),
             offset: offset.into(),
             max_speed,
