@@ -94,7 +94,10 @@ pub(super) fn derive_hash_ops(item: TokenStream) -> Result<TokenStream> {
                         }
                         Fields::Unit => if is_variant {
                             quote! {
-                               Self::#variant_name =>  HashOpsHashable::hash(&#disc, hasher),
+                               Self::#variant_name => {
+                                   let discriminant = #disc;
+                                   HashOpsHashable::hash(&discriminant, hasher);
+                               }
                             }
                         } else {
                             quote! {
